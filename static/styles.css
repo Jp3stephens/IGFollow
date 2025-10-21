@@ -1,0 +1,42 @@
+body {
+  background-color: #f5f6fa;
+}
+
+.hero {
+  background: radial-gradient(circle at top left, #6f42c1, #343a40);
+  color: #fff;
+  border-radius: 1.5rem;
+  padding: 4rem 2rem;
+}
+
+.alert-container {
+  margin-bottom: 1.5rem;
+}
+
+.card {
+  border: none;
+}
+
+footer {
+  position: relative;
+}
+
+.btn-primary {
+  background-color: #6f42c1;
+  border-color: #6f42c1;
+}
+
+.btn-primary:hover {
+  background-color: #5a32a2;
+  border-color: #5a32a2;
+}
+
+.btn-success {
+  background-color: #20c997;
+  border-color: #20c997;
+}
+
+.btn-success:hover {
+  background-color: #159a74;
+  border-color: #159a74;
+}
