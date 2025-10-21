@@ -1,5 +1,6 @@
 from datetime import datetime
 import os
+from typing import Optional
 
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
@@ -55,7 +56,7 @@ def create_app(config_class: type = Config) -> Flask:
     return app
 
 
-def _ensure_sqlite_directory(database_uri: str | None) -> None:
+def _ensure_sqlite_directory(database_uri: Optional[str]) -> None:
     """Create the parent directory for SQLite databases if needed."""
 
     if not database_uri:
