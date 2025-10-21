@@ -21,7 +21,18 @@ IGFollow Tracker is a Flask web application that helps you monitor how an Instag
 
 ## Getting Started
 
-### 1. Clone and install dependencies
+### 1. Clone the repository
+
+Use `git clone` with either the public repository URL or your fork:
+
+```bash
+git clone https://github.com/<your-org>/IGFollow.git
+cd IGFollow
+```
+
+If you already initialized the project locally and just need the latest version, run `git pull` inside the project directory instead.
+
+### 2. Create a virtual environment and install dependencies
 
 ```bash
 python -m venv .venv
@@ -29,7 +40,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 2. Configure environment
+### 3. Configure environment
 
 Create a `.env` file (optional) to override defaults:
 
@@ -40,7 +51,7 @@ DATABASE_URL=sqlite:///instance/igfollow.db
 MAX_FREE_EXPORT=600
 ```
 
-### 3. Initialize the database
+### 4. Initialize the database
 
 ```bash
 flask --app run.py db init
@@ -50,7 +61,7 @@ flask --app run.py db upgrade
 
 These commands create the user, tracked account, snapshot, and snapshot entry tables.
 
-### 4. Run the application
+### 5. Run the application
 
 ```bash
 flask --app run.py run --debug
