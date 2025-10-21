@@ -6,6 +6,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_migrate import Migrate
 from flask_wtf import CSRFProtect
+from sqlalchemy.engine import make_url
 
 from .config import Config
 
@@ -24,6 +25,8 @@ def create_app(config_class: type = Config) -> Flask:
         template_folder=os.path.join(base_dir, "..", "templates"),
     )
     app.config.from_object(config_class)
+
+    _ensure_sqlite_directory(app.config.get("SQLALCHEMY_DATABASE_URI"))
 
     try:
         os.makedirs(app.instance_path, exist_ok=True)
@@ -50,3 +53,26 @@ def create_app(config_class: type = Config) -> Flask:
         return {"now": datetime.utcnow()}
 
     return app
+
+
+def _ensure_sqlite_directory(database_uri: str | None) -> None:
+    """Create the parent directory for SQLite databases if needed."""
+
+    if not database_uri:
+        return
+
+    try:
+        url = make_url(database_uri)
+    except Exception:  # pragma: no cover - defensive guard for invalid URIs
+        return
+
+    if url.drivername != "sqlite":
+        return
+
+    database = url.database
+    if not database:
+        return
+
+    directory = os.path.dirname(database)
+    if directory:
+        os.makedirs(directory, exist_ok=True)
