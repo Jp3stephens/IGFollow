@@ -16,7 +16,7 @@
         <h2 class="h5">Upload latest export</h2>
         <p class="text-muted small">Download your followers/following list from Instagram (Settings → Account → Your activity → Download your information → Followers and Following) and upload the CSV file here.</p>
         <form method="post" action="{{ url_for('main.upload_snapshot', account_id=account.id) }}" enctype="multipart/form-data">
-          {{ csrf_token() }}
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <div class="mb-3">
             <label for="snapshot_type" class="form-label">List type</label>
             <select class="form-select" name="snapshot_type" id="snapshot_type" required>
@@ -39,7 +39,7 @@
         <h2 class="h5">Export latest data</h2>
         <p class="text-muted small">Exports are limited to {{ current_app.config['MAX_FREE_EXPORT'] }} rows per list on the free plan.</p>
         <form method="post" action="{{ url_for('main.export_snapshot', account_id=account.id) }}">
-          {{ csrf_token() }}
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <div class="mb-3">
             <label for="export_snapshot_type" class="form-label">List type</label>
             <select class="form-select" name="snapshot_type" id="export_snapshot_type" required>
