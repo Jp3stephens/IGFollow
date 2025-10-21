@@ -17,7 +17,12 @@ csrf = CSRFProtect()
 
 
 def create_app(config_class: type = Config) -> Flask:
-    app = Flask(__name__, static_folder="static", template_folder="templates")
+    base_dir = os.path.abspath(os.path.dirname(__file__))
+    app = Flask(
+        __name__,
+        static_folder=os.path.join(base_dir, "..", "static"),
+        template_folder=os.path.join(base_dir, "..", "templates"),
+    )
     app.config.from_object(config_class)
 
     try:
