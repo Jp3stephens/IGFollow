@@ -37,7 +37,7 @@
     <div class="card h-100 shadow-sm">
       <div class="card-body">
         <h2 class="h5">Export latest data</h2>
-        <p class="text-muted small">Exports are limited to {{ current_app.config['MAX_FREE_EXPORT'] }} rows per list on the free plan.</p>
+        <p class="text-muted small">Exports are limited to {{ max_free_export }} rows per list on the free plan.</p>
         <form method="post" action="{{ url_for('main.export_snapshot', account_id=account.id) }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <div class="mb-3">

@@ -6,7 +6,7 @@
     <div class="card shadow-sm">
       <div class="card-body p-5 text-center">
         <h1 class="h3 mb-3">Unlock Unlimited Exports</h1>
-        <p class="lead">You've reached the {{ current_app.config['MAX_FREE_EXPORT'] }} profile export limit. Upgrade to keep downloading complete reports.</p>
+        <p class="lead">You've reached the {{ max_free_export }} profile export limit. Upgrade to keep downloading complete reports.</p>
         <div class="row mt-4 gy-4">
           <div class="col-md-6">
             <div class="border rounded-3 p-4 h-100">
@@ -15,7 +15,7 @@
               <ul class="list-unstyled small text-start">
                 <li>✔ Unlimited tracked accounts</li>
                 <li>✔ Manual CSV uploads</li>
-                <li>✔ Exports up to {{ current_app.config['MAX_FREE_EXPORT'] }} rows</li>
+                <li>✔ Exports up to {{ max_free_export }} rows</li>
               </ul>
               <button class="btn btn-outline-secondary w-100" disabled>Current plan</button>
             </div>

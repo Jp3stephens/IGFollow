@@ -50,8 +50,11 @@ def create_app(config_class: type = Config) -> Flask:
     app.register_blueprint(main_bp)
 
     @app.context_processor
-    def inject_now():
-        return {"now": datetime.utcnow()}
+    def inject_globals():
+        return {
+            "now": datetime.utcnow(),
+            "max_free_export": app.config.get("MAX_FREE_EXPORT", 600),
+        }
 
     return app
 
