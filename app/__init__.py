@@ -11,6 +11,7 @@ from sqlalchemy.engine import make_url
 from flask_wtf.csrf import CSRFError
 
 from .config import Config
+from .instagram import instagram_service
 
 
 db = SQLAlchemy()
@@ -34,6 +35,8 @@ def create_app(config_class: type = Config) -> Flask:
         pass
 
     _ensure_sqlite_directory(app)
+
+    instagram_service.init_app(app)
 
     db.init_app(app)
     migrate.init_app(app, db)

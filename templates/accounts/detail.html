@@ -25,7 +25,7 @@
     <div class="card h-100 shadow-sm">
       <div class="card-body">
         <h2 class="h5">Upload latest export</h2>
-        <p class="text-muted small">Download your followers/following list from Instagram (Settings → Account → Your activity → Download your information → Followers and Following) and upload the CSV file here.</p>
+        <p class="text-muted small">IGFollow pulls live data with your Instagram credentials. Use this uploader when you want to backfill an older export or ingest a CSV/JSON list you've curated manually.</p>
         <form method="post" action="{{ url_for('main.upload_snapshot', account_id=account.id) }}" enctype="multipart/form-data">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <div class="mb-3">
@@ -110,7 +110,7 @@
           {% endfor %}
         </div>
         {% else %}
-        <p class="text-muted mb-0">Upload a followers export to populate this list.</p>
+        <p class="text-muted mb-0">We're waiting on Instagram for the latest follower list. You can also upload a CSV here to jump-start tracking.</p>
         {% endif %}
       </div>
     </div>
@@ -145,7 +145,7 @@
           {% endfor %}
         </div>
         {% else %}
-        <p class="text-muted mb-0">Upload a following export to populate this list.</p>
+        <p class="text-muted mb-0">We're waiting on Instagram for the latest following list. Upload a CSV if you need to seed the roster manually.</p>
         {% endif %}
       </div>
     </div>

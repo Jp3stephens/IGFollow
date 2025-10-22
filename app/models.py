@@ -27,6 +27,8 @@ class TrackedAccount(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     instagram_username = db.Column(db.String(255), nullable=False)
+    instagram_user_id = db.Column(db.String(64), nullable=True)
+    profile_picture_url = db.Column(db.String(512), nullable=True)
     notes = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -43,7 +45,8 @@ class TrackedAccount(db.Model):
     @property
     def profile_image_url(self) -> str:
         """Return a best-effort URL for the Instagram avatar."""
-
+        if self.profile_picture_url:
+            return self.profile_picture_url
         return f"https://unavatar.io/instagram/{self.instagram_username}"  # pragma: no cover - simple helper
 
 
@@ -62,6 +65,7 @@ class SnapshotEntry(db.Model):
     snapshot_id = db.Column(db.Integer, db.ForeignKey("snapshot.id"), nullable=False)
     username = db.Column(db.String(255), nullable=False)
     full_name = db.Column(db.String(255), nullable=True)
+    profile_pic_url = db.Column(db.String(512), nullable=True)
 
     snapshot = db.relationship("Snapshot", back_populates="entries")
 

@@ -13,6 +13,10 @@ class Config:
     WTF_CSRF_TIME_LIMIT = None
     SECURITY_PASSWORD_SALT = os.getenv("SECURITY_PASSWORD_SALT", "change-me-salt")
     MAX_FREE_EXPORT = int(os.getenv("MAX_FREE_EXPORT", "600"))
+    INSTAGRAM_USERNAME = os.getenv("INSTAGRAM_USERNAME")
+    INSTAGRAM_PASSWORD = os.getenv("INSTAGRAM_PASSWORD")
+    INSTAGRAM_FETCH_LIMIT = int(os.getenv("INSTAGRAM_FETCH_LIMIT", "5000"))
+    INSTAGRAM_CACHE_MINUTES = int(os.getenv("INSTAGRAM_CACHE_MINUTES", "10"))
 
 
 class TestConfig(Config):

@@ -1,18 +1,17 @@
 # IGFollow Tracker
 
-IGFollow Tracker is a Flask web application that helps you monitor how an Instagram account's follower and following lists change over time. Upload CSV exports directly from Instagram, store historical snapshots in a secure database, and compare changes to understand who followed, unfollowed, or potentially blocked an account.
-
-> **Important:** IGFollow Tracker does not automate data collection from Instagram. You must download follower/following lists using Instagram's official "Download your information" tool and upload the CSV files manually.
+IGFollow Tracker is a Flask web application that keeps an Instagram account's follower and following lists in sync for you. Provide API credentials once, let the app pull the live rosters directly from Instagram, and review or export historical differences without managing spreadsheets by hand. Manual CSV/JSON uploads are still supported as a fallback when you want to ingest exports you've captured elsewhere.
 
 ## Features
 
 - Landing page, authentication, and dashboard for managing tracked accounts.
-- Upload follower or following exports in CSV, JSON, or plain-text formats straight from Instagram's "Download your information" bundle.
+- First-class Instagram API integration via [instagrapi](https://github.com/adw0rd/instagrapi) with automated follower/following syncs.
+- Upload follower or following exports in CSV, JSON, or plain-text formats straight from Instagram's "Download your information" bundle whenever you need to backfill.
 - Store each snapshot in a relational database for long-term comparison.
 - Automatically compute differences between the latest two snapshots.
 - Export the newest snapshot to CSV or Excel with a progress indicator and instant download trigger.
 - Paywall guard that requires a subscription for exports larger than 600 profiles (configurable via `MAX_FREE_EXPORT`).
-- Profile previews and avatars pulled via Unavatar to keep the UI feeling connected to the tracked handle.
+- Profile previews and avatars sourced straight from Instagram so every roster view feels tangible.
 
 ## Tech Stack
 
@@ -50,7 +49,13 @@ SECRET_KEY=change-me
 SECURITY_PASSWORD_SALT=change-me-too
 DATABASE_URL=sqlite:///instance/igfollow.db
 MAX_FREE_EXPORT=600
+INSTAGRAM_USERNAME=your.api.account
+INSTAGRAM_PASSWORD=your-strong-password
+INSTAGRAM_FETCH_LIMIT=5000
+INSTAGRAM_CACHE_MINUTES=10
 ```
+
+> **Two-factor authentication:** If your Instagram account requires 2FA you will need to finish verification once by running the app locally; instagrapi caches the session in `instagrapi.json` within the working directory.
 
 ### 4. Initialize the database
 
@@ -60,7 +65,7 @@ flask --app run.py db migrate -m "Initial tables"
 flask --app run.py db upgrade
 ```
 
-These commands create the user, tracked account, snapshot, and snapshot entry tables.
+These commands create the user, tracked account, snapshot, and snapshot entry tables (including Instagram profile metadata).
 
 ### 5. Run the application
 
@@ -73,15 +78,14 @@ Visit [http://127.0.0.1:5000](http://127.0.0.1:5000) to access the landing page 
 ## Usage Workflow
 
 1. Register or log in.
-2. Add an Instagram handle to track.
-3. Upload follower and following exports (CSV, JSON, or even plain username lists).
-4. Re-upload new exports whenever you want to compare changes.
-5. Review the difference report on the account detail page.
-6. Export the latest snapshot as CSV/Excel using the built-in progress bar; upgrade if you exceed the free plan limit.
+2. Add an Instagram handle to track. IGFollow will immediately sync the current followers/following lists via the API.
+3. Review the account dashboard to see avatars, counts, and the latest diff summary.
+4. Optional: Upload CSV/JSON/text exports if you want to import historical data.
+5. Export the latest snapshot as CSV/Excel using the built-in progress bar; upgrade if you exceed the free plan limit.
 
 ## Paywall & Subscription Logic
 
-Users on the free plan can track unlimited accounts but exporting any list with more than 600 rows triggers the paywall page. To unlock unlimited exports, set `is_subscribed=True` directly in the database or build your own payment integration on top of the provided structure.
+Users on the free plan can track unlimited accounts but exporting any list with more than 600 rows triggers the paywall page. Free downloads include the first 600 entries; upgrade (toggle `is_subscribed=True` in the database while prototyping) for complete exports.
 
 ## Deployment
 
@@ -105,8 +109,8 @@ pytest
 
 ## Roadmap
 
-- Automated Instagram data fetching via approved APIs.
-- Email notifications and scheduled comparisons.
+- Background jobs to refresh snapshots on a schedule.
+- Email notifications whenever follower counts change dramatically.
 - Subscription billing integration.
 
 ## License

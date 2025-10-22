@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import io
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Iterable, Optional
 
 from flask import (
@@ -28,6 +28,7 @@ from .forms import (
     validate_export_format,
     validate_snapshot_type,
 )
+from .instagram import InstagramServiceError, get_instagram_service
 from .models import Snapshot, SnapshotEntry, TrackedAccount
 from .paywall import exceeds_free_limit
 
@@ -74,7 +75,20 @@ def add_account():
             )
             db.session.add(account)
             db.session.commit()
-            flash("Account added. Upload your first snapshot to begin tracking.", "success")
+
+            try:
+                refreshed = _ensure_instagram_snapshots(account, force=True)
+            except InstagramServiceError as exc:
+                flash(str(exc), "danger")
+                flash(
+                    "Account added, but we could not reach Instagram. You can upload a snapshot manually while credentials are fixed.",
+                    "warning",
+                )
+            else:
+                if refreshed:
+                    flash("Account added and synced with Instagram.", "success")
+                else:
+                    flash("Account added. We'll keep checking Instagram for updates.", "success")
             return redirect(url_for("main.view_account", account_id=account.id))
 
     return render_template("accounts/add.html")
@@ -84,6 +98,10 @@ def add_account():
 @login_required
 def view_account(account_id: int):
     account = _get_account_or_404(account_id)
+    try:
+        _ensure_instagram_snapshots(account)
+    except InstagramServiceError as exc:
+        flash(str(exc), "warning")
     followers_snapshot = account.latest_snapshot("followers")
     following_snapshot = account.latest_snapshot("following")
     followers = _latest_diff(account, "followers")
@@ -123,6 +141,133 @@ def _latest_diff(account: TrackedAccount, snapshot_type: str) -> Optional[Snapsh
     )
 
 
+def _normalize_username(value: str) -> str:
+    return value.strip().lstrip("@").lower()
+
+
+def _prepare_entries(rows: Iterable[tuple[str, Optional[str]]]) -> list[dict[str, str]]:
+    service = get_instagram_service()
+    prepared: dict[str, dict[str, str]] = {}
+    for username, full_name in rows:
+        normalized = _normalize_username(username or "")
+        if not normalized:
+            continue
+        if normalized in prepared:
+            continue
+
+        resolved_name = (full_name or "").strip()
+        profile_pic_url = ""
+
+        if service.is_configured:
+            try:
+                profile = service.fetch_profile(normalized)
+            except InstagramServiceError:
+                profile = None
+            if profile:
+                resolved_name = resolved_name or profile.full_name
+                profile_pic_url = profile.profile_pic_url
+
+        prepared[normalized] = {
+            "username": normalized,
+            "full_name": resolved_name,
+            "profile_pic_url": profile_pic_url,
+        }
+
+    return list(prepared.values())
+
+
+def _store_snapshot(
+    account: TrackedAccount,
+    snapshot_type: str,
+    entries: Iterable[dict[str, str]],
+    *,
+    commit: bool = True,
+) -> tuple[Snapshot, SnapshotDiff]:
+    previous_snapshot = account.latest_snapshot(snapshot_type)
+
+    snapshot = Snapshot(tracked_account_id=account.id, snapshot_type=snapshot_type)
+    db.session.add(snapshot)
+    db.session.flush()
+
+    seen: set[str] = set()
+    usernames: list[str] = []
+    for entry in entries:
+        username = _normalize_username(entry.get("username", ""))
+        if not username or username in seen:
+            continue
+        seen.add(username)
+        full_name = (entry.get("full_name") or "").strip()
+        profile_pic_url = entry.get("profile_pic_url") or ""
+        db.session.add(
+            SnapshotEntry(
+                snapshot_id=snapshot.id,
+                username=username,
+                full_name=full_name,
+                profile_pic_url=profile_pic_url,
+            )
+        )
+        usernames.append(username)
+
+    if previous_snapshot:
+        previous_usernames = [entry.username for entry in previous_snapshot.entries]
+        diff = compute_diff(previous_usernames, usernames)
+    else:
+        diff = SnapshotDiff(added=usernames, removed=[])
+
+    if commit:
+        db.session.commit()
+
+    return snapshot, diff
+
+
+def _ensure_instagram_snapshots(
+    account: TrackedAccount,
+    *,
+    snapshot_type: Optional[str] = None,
+    force: bool = False,
+) -> bool:
+    service = get_instagram_service()
+    if not service.is_configured:
+        raise InstagramServiceError(
+            "Instagram credentials are not configured. Set INSTAGRAM_USERNAME and INSTAGRAM_PASSWORD in the environment."
+        )
+
+    profile = service.fetch_profile(account.instagram_username)
+    account.instagram_username = profile.username
+    account.instagram_user_id = profile.user_id
+    if profile.profile_pic_url:
+        account.profile_picture_url = profile.profile_pic_url
+
+    db.session.add(account)
+    db.session.flush()
+
+    cache_minutes = int(current_app.config.get("INSTAGRAM_CACHE_MINUTES", 10))
+    freshness_threshold = datetime.utcnow() - timedelta(minutes=cache_minutes)
+
+    snapshot_types = [snapshot_type] if snapshot_type else ["followers", "following"]
+    refreshed = False
+
+    for entry_type in snapshot_types:
+        latest = account.latest_snapshot(entry_type)
+        if not force and latest and latest.created_at >= freshness_threshold:
+            continue
+
+        relationships = service.fetch_relationships(profile.user_id, entry_type)
+        entries = [
+            {
+                "username": rel.username,
+                "full_name": rel.full_name,
+                "profile_pic_url": rel.profile_pic_url,
+            }
+            for rel in relationships
+        ]
+        _store_snapshot(account, entry_type, entries, commit=False)
+        refreshed = True
+
+    db.session.commit()
+    return refreshed
+
+
 @main_bp.route("/accounts/<int:account_id>/upload", methods=["POST"])
 @login_required
 def upload_snapshot(account_id: int):
@@ -145,23 +290,10 @@ def upload_snapshot(account_id: int):
         flash("No rows were found in the uploaded file.", "warning")
         return redirect(url_for("main.view_account", account_id=account.id))
 
-    previous_snapshot = account.latest_snapshot(snapshot_type)
+    entries = _prepare_entries(rows)
+    snapshot, diff = _store_snapshot(account, snapshot_type, entries)
 
-    snapshot = Snapshot(tracked_account_id=account.id, snapshot_type=snapshot_type)
-    db.session.add(snapshot)
-    db.session.flush()
-
-    usernames = []
-    for username, full_name in rows:
-        entry = SnapshotEntry(snapshot_id=snapshot.id, username=username, full_name=full_name)
-        db.session.add(entry)
-        usernames.append(username)
-
-    db.session.commit()
-
-    if previous_snapshot:
-        previous_usernames = [entry.username for entry in previous_snapshot.entries]
-        diff = compute_diff(previous_usernames, usernames)
+    if diff.removed or diff.added:
         flash(
             "Snapshot stored. Added {added} new and lost {removed} compared to the previous upload.".format(
                 added=len(diff.added), removed=len(diff.removed)
@@ -170,7 +302,7 @@ def upload_snapshot(account_id: int):
         )
     else:
         flash(
-            f"Snapshot stored with {len(usernames)} entries. We'll compare it to future uploads.",
+            f"Snapshot stored with {len(entries)} entries. We'll compare it to future uploads.",
             "success",
         )
     return redirect(url_for("main.view_account", account_id=account.id))
@@ -193,9 +325,17 @@ def export_snapshot(account_id: int):
         flash(str(exc), "danger")
         return redirect(url_for("main.view_account", account_id=account.id))
 
+    try:
+        _ensure_instagram_snapshots(account, snapshot_type=snapshot_type)
+    except InstagramServiceError as exc:
+        if expects_json:
+            return jsonify({"status": "error", "message": str(exc)}), 502
+        flash(str(exc), "danger")
+        return redirect(url_for("main.view_account", account_id=account.id))
+
     latest_snapshot = account.latest_snapshot(snapshot_type)
     if not latest_snapshot:
-        message = "Upload a snapshot before exporting."
+        message = "We could not find any data for this list yet. Upload a snapshot or check your Instagram credentials."
         if expects_json:
             return jsonify({"status": "error", "message": message}), 400
         flash(message, "warning")
@@ -297,11 +437,12 @@ def _snapshot_entries(
     results: list[dict[str, Optional[str]]] = []
     for entry in entries:
         username = entry.username
+        avatar_url = entry.profile_pic_url or _avatar_url(username)
         results.append(
             {
                 "username": username,
                 "full_name": entry.full_name or "",
-                "avatar_url": _avatar_url(username),
+                "avatar_url": avatar_url,
             }
         )
     return results
