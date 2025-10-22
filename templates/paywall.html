@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}Upgrade Required - IGFollow Tracker{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card shadow-sm">
+      <div class="card-body p-5 text-center">
+        <h1 class="h3 mb-3">Unlock Unlimited Exports</h1>
+        <p class="lead">You've reached the {{ max_free_export }} profile export limit. Upgrade to keep downloading complete reports.</p>
+        <div class="row mt-4 gy-4">
+          <div class="col-md-6">
+            <div class="border rounded-3 p-4 h-100">
+              <h2 class="h5">Free</h2>
+              <p class="text-muted small">Perfect for creators just getting started.</p>
+              <ul class="list-unstyled small text-start">
+                <li>✔ Unlimited tracked accounts</li>
+                <li>✔ Manual CSV uploads</li>
+                <li>✔ Exports up to {{ max_free_export }} rows</li>
+              </ul>
+              <button class="btn btn-outline-secondary w-100" disabled>Current plan</button>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="border border-primary rounded-3 p-4 h-100 bg-light">
+              <h2 class="h5">Pro</h2>
+              <p class="text-muted small">Best for agencies, managers, and power users.</p>
+              <ul class="list-unstyled small text-start">
+                <li>✔ Unlimited exports</li>
+                <li>✔ Priority product support</li>
+                <li>✔ Early access to automation features</li>
+              </ul>
+              <a class="btn btn-primary w-100" href="mailto:hello@igfollow.app?subject=Upgrade%20Request">Contact sales</a>
+            </div>
+          </div>
+        </div>
+        <p class="mt-4 mb-0 text-muted">Need help? Email <a href="mailto:support@igfollow.app">support@igfollow.app</a>.</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
