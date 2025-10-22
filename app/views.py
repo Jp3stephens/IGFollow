@@ -49,12 +49,49 @@ def dashboard():
         .order_by(TrackedAccount.created_at.desc())
         .all()
     )
-    return render_template("dashboard.html", accounts=accounts)
+    service = get_instagram_service()
+    return render_template(
+        "dashboard.html",
+        accounts=accounts,
+        instagram_connected=service.is_connected(current_user),
+        instagram_available=service.is_available(),
+    )
+
+
+@main_bp.route("/settings/instagram", methods=["GET", "POST"])
+@login_required
+def instagram_settings():
+    service = get_instagram_service()
+    if request.method == "POST":
+        action = request.form.get("action", "connect")
+        if action == "disconnect":
+            service.disconnect_user(current_user)
+            flash("Instagram account disconnected.", "info")
+            return redirect(url_for("main.instagram_settings"))
+
+        username = request.form.get("instagram_username", "")
+        password = request.form.get("instagram_password", "")
+        try:
+            service.connect_user(current_user, username, password)
+        except InstagramServiceError as exc:
+            flash(str(exc), "danger")
+        else:
+            flash("Instagram account connected successfully.", "success")
+        return redirect(url_for("main.instagram_settings"))
+
+    session = current_user.instagram_session
+    return render_template(
+        "settings/instagram.html",
+        instagram_session=session,
+        instagram_connected=service.is_connected(current_user),
+        instagram_available=service.is_available(),
+    )
 
 
 @main_bp.route("/accounts/add", methods=["GET", "POST"])
 @login_required
 def add_account():
+    service = get_instagram_service()
     if request.method == "POST":
         username = request.form.get("username", "").strip()
         notes = request.form.get("notes", "")
@@ -76,9 +113,8 @@ def add_account():
             db.session.add(account)
             db.session.commit()
 
-            service = get_instagram_service()
             try:
-                refreshed = _ensure_instagram_snapshots(account, force=True)
+                refreshed = _ensure_instagram_snapshots(account, user=current_user, force=True)
             except InstagramServiceError as exc:
                 flash(str(exc), "danger")
                 flash(
@@ -88,7 +124,7 @@ def add_account():
             else:
                 if refreshed:
                     flash("Account added and synced with Instagram.", "success")
-                elif service.is_configured:
+                elif service.is_connected(current_user):
                     flash("Account added. We'll keep checking Instagram for updates.", "success")
                 else:
                     flash(
@@ -97,7 +133,11 @@ def add_account():
                     )
             return redirect(url_for("main.view_account", account_id=account.id))
 
-    return render_template("accounts/add.html")
+    return render_template(
+        "accounts/add.html",
+        instagram_connected=service.is_connected(current_user),
+        instagram_available=service.is_available(),
+    )
 
 
 @main_bp.route("/accounts/<int:account_id>")
@@ -105,13 +145,14 @@ def add_account():
 def view_account(account_id: int):
     account = _get_account_or_404(account_id)
     try:
-        _ensure_instagram_snapshots(account)
+        _ensure_instagram_snapshots(account, user=current_user)
     except InstagramServiceError as exc:
         flash(str(exc), "warning")
     followers_snapshot = account.latest_snapshot("followers")
     following_snapshot = account.latest_snapshot("following")
     followers = _latest_diff(account, "followers")
     following = _latest_diff(account, "following")
+    service = get_instagram_service()
     return render_template(
         "accounts/detail.html",
         account=account,
@@ -121,6 +162,8 @@ def view_account(account_id: int):
         following_snapshot=following_snapshot,
         followers_entries=_snapshot_entries(followers_snapshot) if followers_snapshot else [],
         following_entries=_snapshot_entries(following_snapshot) if following_snapshot else [],
+        instagram_connected=service.is_connected(current_user),
+        instagram_available=service.is_available(),
     )
 
 
@@ -151,7 +194,7 @@ def _normalize_username(value: str) -> str:
     return value.strip().lstrip("@").lower()
 
 
-def _prepare_entries(rows: Iterable[tuple[str, Optional[str]]]) -> list[dict[str, str]]:
+def _prepare_entries(rows: Iterable[tuple[str, Optional[str]]], user) -> list[dict[str, str]]:
     service = get_instagram_service()
     prepared: dict[str, dict[str, str]] = {}
     for username, full_name in rows:
@@ -164,14 +207,14 @@ def _prepare_entries(rows: Iterable[tuple[str, Optional[str]]]) -> list[dict[str
         resolved_name = (full_name or "").strip()
         profile_pic_url = ""
 
-        if service.is_configured:
+        if user and service.is_connected(user):
             try:
-                profile = service.fetch_profile(normalized)
+                profile = service.fetch_profile(user, normalized)
             except InstagramServiceError:
                 profile = None
             if profile:
-                resolved_name = resolved_name or profile.full_name
-                profile_pic_url = profile.profile_pic_url
+                resolved_name = resolved_name or profile["full_name"]
+                profile_pic_url = profile["profile_pic_url"]
 
         prepared[normalized] = {
             "username": normalized,
@@ -229,22 +272,30 @@ def _store_snapshot(
 def _ensure_instagram_snapshots(
     account: TrackedAccount,
     *,
+    user,
     snapshot_type: Optional[str] = None,
     force: bool = False,
 ) -> bool:
     service = get_instagram_service()
-    if not service.is_configured:
+    if not service.is_available():
+        current_app.logger.info(
+            "Instagram service is unavailable; skipping automatic sync for %s",
+            account.instagram_username,
+        )
+        return False
+
+    if not user or not service.is_connected(user):
         current_app.logger.info(
             "Instagram service is not configured; skipping automatic sync for %s",
             account.instagram_username,
         )
         return False
 
-    profile = service.fetch_profile(account.instagram_username)
-    account.instagram_username = profile.username
-    account.instagram_user_id = profile.user_id
-    if profile.profile_pic_url:
-        account.profile_picture_url = profile.profile_pic_url
+    profile = service.fetch_profile(user, account.instagram_username)
+    account.instagram_username = profile["username"]
+    account.instagram_user_id = profile["user_id"]
+    if profile.get("profile_pic_url"):
+        account.profile_picture_url = profile["profile_pic_url"]
 
     db.session.add(account)
     db.session.flush()
@@ -260,12 +311,12 @@ def _ensure_instagram_snapshots(
         if not force and latest and latest.created_at >= freshness_threshold:
             continue
 
-        relationships = service.fetch_relationships(profile.user_id, entry_type)
+        relationships = service.fetch_relationships(user, profile["user_id"], entry_type)
         entries = [
             {
-                "username": rel.username,
-                "full_name": rel.full_name,
-                "profile_pic_url": rel.profile_pic_url,
+                "username": rel["username"],
+                "full_name": rel["full_name"],
+                "profile_pic_url": rel["profile_pic_url"],
             }
             for rel in relationships
         ]
@@ -298,7 +349,7 @@ def upload_snapshot(account_id: int):
         flash("No rows were found in the uploaded file.", "warning")
         return redirect(url_for("main.view_account", account_id=account.id))
 
-    entries = _prepare_entries(rows)
+    entries = _prepare_entries(rows, current_user)
     snapshot, diff = _store_snapshot(account, snapshot_type, entries)
 
     if diff.removed or diff.added:
@@ -334,7 +385,7 @@ def export_snapshot(account_id: int):
         return redirect(url_for("main.view_account", account_id=account.id))
 
     try:
-        _ensure_instagram_snapshots(account, snapshot_type=snapshot_type)
+        _ensure_instagram_snapshots(account, user=current_user, snapshot_type=snapshot_type)
     except InstagramServiceError as exc:
         if expects_json:
             return jsonify({"status": "error", "message": str(exc)}), 502

@@ -20,6 +20,24 @@
   </div>
 </div>
 
+{% if not instagram_connected %}
+<div class="alert alert-warning shadow-sm mb-4">
+  <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
+    <div>
+      <strong>Automatic syncing is paused.</strong>
+      {% if instagram_available %}
+      Connect Instagram to refresh this account without manual uploads.
+      {% else %}
+      Install the Instagram API dependency (`instagrapi`) and restart the server to enable automatic syncing.
+      {% endif %}
+    </div>
+    {% if instagram_available %}
+    <a class="btn btn-success" href="{{ url_for('main.instagram_settings') }}">Connect now</a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
 <div class="row g-4">
   <div class="col-lg-6">
     <div class="card h-100 shadow-sm">

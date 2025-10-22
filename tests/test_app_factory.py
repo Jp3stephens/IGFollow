@@ -86,6 +86,7 @@ def test_startup_schema_migrations_add_missing_columns(tmp_path):
         inspector = inspect(db.engine)
         tracked_columns = {column["name"] for column in inspector.get_columns("tracked_account")}
         entry_columns = {column["name"] for column in inspector.get_columns("snapshot_entry")}
+        assert "instagram_session" in inspector.get_table_names()
 
     assert {"instagram_user_id", "profile_picture_url"}.issubset(tracked_columns)
     assert {"full_name", "profile_pic_url"}.issubset(entry_columns)

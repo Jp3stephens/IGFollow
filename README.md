@@ -5,6 +5,7 @@ IGFollow Tracker is a Flask web application that keeps an Instagram account's fo
 ## Features
 
 - Landing page, authentication, and dashboard for managing tracked accounts.
+- Built-in Instagram Connect screen that stores an encrypted session after you sign in once through IGFollow.
 - First-class Instagram API integration via [instagrapi](https://github.com/adw0rd/instagrapi) with automated follower/following syncs.
 - Upload follower or following exports in CSV, JSON, or plain-text formats straight from Instagram's "Download your information" bundle whenever you need to backfill.
 - Store each snapshot in a relational database for long-term comparison.
@@ -49,15 +50,13 @@ SECRET_KEY=change-me
 SECURITY_PASSWORD_SALT=change-me-too
 DATABASE_URL=sqlite:///instance/igfollow.db
 MAX_FREE_EXPORT=600
-INSTAGRAM_USERNAME=your.api.account
-INSTAGRAM_PASSWORD=your-strong-password
 INSTAGRAM_FETCH_LIMIT=5000
 INSTAGRAM_CACHE_MINUTES=10
 ```
 
-> **Two-factor authentication:** If your Instagram account requires 2FA you will need to finish verification once by running the app locally; instagrapi caches the session in `instagrapi.json` within the working directory.
+> **Two-factor authentication:** When you connect from the "Instagram Connect" screen the app will prompt for any additional verification steps required by Instagram and then save the resulting API session for future refreshes.
 >
-> **No Instagram credentials yet?** IGFollow still works in manual mode—upload CSV/JSON exports and the app will skip API calls while letting you review diffs and download snapshots.
+> **Manual mode:** IGFollow still works without connecting Instagram—upload CSV/JSON exports and the app will skip API calls while letting you review diffs and download snapshots.
 
 ### 4. Initialize the database
 
@@ -83,10 +82,11 @@ Visit [http://127.0.0.1:5000](http://127.0.0.1:5000) to access the landing page 
 ## Usage Workflow
 
 1. Register or log in.
-2. Add an Instagram handle to track. IGFollow will immediately sync the current followers/following lists via the API when credentials are configured; otherwise you can upload a snapshot right away.
-3. Review the account dashboard to see avatars, counts, and the latest diff summary.
-4. Optional: Upload CSV/JSON/text exports if you want to import historical data.
-5. Export the latest snapshot as CSV/Excel using the built-in progress bar; upgrade if you exceed the free plan limit.
+2. Visit **Instagram Connect** from the navigation, provide your Instagram username/password once, and let IGFollow store the encrypted session token.
+3. Add an Instagram handle to track. IGFollow will immediately sync the current followers/following lists via the API when connected; otherwise you can upload a snapshot right away.
+4. Review the account dashboard to see avatars, counts, and the latest diff summary.
+5. Optional: Upload CSV/JSON/text exports if you want to import historical data.
+6. Export the latest snapshot as CSV/Excel using the built-in progress bar; upgrade if you exceed the free plan limit.
 
 ## Paywall & Subscription Logic
 

@@ -1,24 +1,23 @@
-from datetime import datetime
 import os
+from datetime import datetime
 from typing import Optional
 
 from flask import Flask, flash, jsonify, redirect, request, url_for
-from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_migrate import Migrate
+from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import CSRFProtect
+from flask_wtf.csrf import CSRFError
 from sqlalchemy import inspect, text
 from sqlalchemy.engine import make_url
-from flask_wtf.csrf import CSRFError
-
-from .config import Config
-from .instagram import instagram_service
-
 
 db = SQLAlchemy()
 migrate = Migrate()
 login_manager = LoginManager()
 csrf = CSRFProtect()
+
+from .config import Config
+from .instagram import instagram_service
 
 
 def create_app(config_class: type = Config) -> Flask:
@@ -114,6 +113,11 @@ def _run_startup_schema_migrations(app: Flask) -> None:
 
         existing_tables = set(inspector.get_table_names())
         if {"user", "tracked_account", "snapshot", "snapshot_entry"} - existing_tables:
+            db.create_all()
+            inspector = inspect(engine)
+            existing_tables = set(inspector.get_table_names())
+
+        if "instagram_session" not in existing_tables:
             db.create_all()
             inspector = inspect(engine)
 

@@ -1,5 +1,28 @@
 body {
   background: linear-gradient(180deg, #f4f5ff 0%, #f9fafc 55%, #ffffff 100%);
+  font-family: "Inter", "Segoe UI", sans-serif;
+  color: #1f2937;
+}
+
+.glass-nav {
+  background: rgba(17, 24, 39, 0.85) !important;
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.navbar-brand {
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.nav-link {
+  font-weight: 500;
+  transition: opacity 0.2s ease;
+}
+
+.nav-link:hover,
+.nav-link.active {
+  opacity: 0.9;
 }
 
 .hero {
@@ -12,6 +35,23 @@ body {
 
 .alert-container {
   margin-bottom: 1.5rem;
+}
+
+.settings-card {
+  background: rgba(255, 255, 255, 0.88);
+  border-radius: 1.25rem;
+  box-shadow: 0 1.25rem 3.5rem rgba(15, 23, 42, 0.14);
+  padding: 2.5rem 2rem;
+}
+
+.settings-form label {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.settings-meta {
+  font-size: 0.875rem;
+  color: #475569;
 }
 
 .card {
@@ -36,6 +76,7 @@ body {
 
 footer {
   position: relative;
+  background: transparent;
 }
 
 .btn-primary {

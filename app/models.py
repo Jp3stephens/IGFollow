@@ -15,6 +15,12 @@ class User(UserMixin, db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     tracked_accounts = db.relationship("TrackedAccount", back_populates="owner", cascade="all, delete-orphan")
+    instagram_session = db.relationship(
+        "InstagramSession",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        uselist=False,
+    )
 
     def set_password(self, password: str) -> None:
         self.password_hash = generate_password_hash(password, method="pbkdf2:sha256")
@@ -68,6 +74,17 @@ class SnapshotEntry(db.Model):
     profile_pic_url = db.Column(db.String(512), nullable=True)
 
     snapshot = db.relationship("Snapshot", back_populates="entries")
+
+
+class InstagramSession(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, unique=True)
+    instagram_username = db.Column(db.String(255), nullable=False)
+    settings_json = db.Column(db.Text, nullable=False)
+    encrypted_password = db.Column(db.Text, nullable=True)
+    last_login_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship("User", back_populates="instagram_session")
 
 
 @login_manager.user_loader

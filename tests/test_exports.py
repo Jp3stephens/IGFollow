@@ -132,8 +132,8 @@ def test_ajax_export_truncates_when_over_limit(app, client):
 
 
 def test_export_skips_instagram_when_not_configured(app, client, stub_instagram):
-    # Simulate missing credentials
-    stub_instagram.is_configured = False
+    # Simulate missing Instagram integration entirely
+    stub_instagram.set_available(False)
 
     with app.app_context():
         user, account, snapshot = _seed_account()

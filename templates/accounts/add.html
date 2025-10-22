@@ -6,7 +6,18 @@
     <div class="card shadow-sm">
       <div class="card-body p-4">
         <h1 class="h4 mb-3">Add an Instagram account</h1>
-        <p class="text-muted">You'll upload follower/following CSV exports on the next page.</p>
+        <p class="text-muted">IGFollow will sync the latest followers and following automatically when Instagram is connected.</p>
+        {% if not instagram_connected %}
+        <div class="alert alert-info">
+          <strong>Tip:</strong>
+          {% if instagram_available %}
+          Link your Instagram account first for instant syncing—otherwise we'll wait for your first CSV upload.
+          <a href="{{ url_for('main.instagram_settings') }}" class="alert-link">Connect now</a>.
+          {% else %}
+          Install <code>instagrapi</code> to enable automatic syncing or continue with manual uploads.
+          {% endif %}
+        </div>
+        {% endif %}
         <form method="post">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <div class="mb-3">
