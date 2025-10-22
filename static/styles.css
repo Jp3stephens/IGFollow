@@ -1,0 +1,133 @@
+body {
+  background: linear-gradient(180deg, #f4f5ff 0%, #f9fafc 55%, #ffffff 100%);
+}
+
+.hero {
+  background: radial-gradient(circle at top left, #6f42c1, #343a40);
+  color: #fff;
+  border-radius: 1.5rem;
+  padding: 4rem 2rem;
+  box-shadow: 0 1.5rem 3rem rgba(17, 24, 39, 0.2);
+}
+
+.alert-container {
+  margin-bottom: 1.5rem;
+}
+
+.card {
+  border: none;
+  border-radius: 1rem;
+  box-shadow: 0 1rem 2.5rem rgba(15, 23, 42, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 1.5rem 3rem rgba(15, 23, 42, 0.12);
+}
+
+.account-hero {
+  background: linear-gradient(135deg, rgba(111, 66, 193, 0.12), rgba(32, 201, 151, 0.1));
+}
+
+.account-card {
+  backdrop-filter: blur(4px);
+}
+
+footer {
+  position: relative;
+}
+
+.btn-primary {
+  background-color: #6f42c1;
+  border-color: #6f42c1;
+}
+
+.btn-primary:hover {
+  background-color: #5a32a2;
+  border-color: #5a32a2;
+}
+
+.btn-success {
+  background-color: #20c997;
+  border-color: #20c997;
+}
+
+.btn-success:hover {
+  background-color: #159a74;
+  border-color: #159a74;
+}
+
+.avatar {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  overflow: hidden;
+  background: linear-gradient(135deg, #6f42c1, #20c997);
+  color: #fff;
+  font-weight: 600;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.avatar .avatar-fallback {
+  display: none;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  letter-spacing: 0.05em;
+}
+
+.avatar--fallback img {
+  display: none;
+}
+
+.avatar--fallback .avatar-fallback {
+  display: inline-flex;
+}
+
+.avatar-lg {
+  width: 4rem;
+  height: 4rem;
+}
+
+.avatar-xl {
+  width: 6rem;
+  height: 6rem;
+  font-size: 1.5rem;
+}
+
+.profile-preview {
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 1rem;
+  padding: 1.25rem 1rem;
+  box-shadow: inset 0 0 0 1px rgba(111, 66, 193, 0.08);
+}
+
+.export-progress {
+  margin-top: 1rem;
+}
+
+.export-progress .progress {
+  height: 0.75rem;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.export-progress .progress-bar {
+  background: linear-gradient(135deg, #6f42c1, #20c997);
+  font-size: 0.75rem;
+}
+
+.export-progress--error .progress-bar {
+  background: linear-gradient(135deg, #dc3545, #ff6b6b);
+}
