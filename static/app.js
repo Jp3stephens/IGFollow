@@ -51,7 +51,8 @@
       if (progressWrapper && progressBar && progressStatus) {
         progressWrapper.classList.remove('d-none');
         progressWrapper.classList.remove('export-progress--error');
-        setProgress(8, 'Preparing export…');
+        setProgress(10);
+        updateProgress(10, 'Preparing export…');
         startProgressSimulation();
       }
 
@@ -61,45 +62,43 @@
           method: 'POST',
           body: formData,
           credentials: 'include',
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            Accept: 'application/json',
+          },
         });
 
-        if (response.redirected) {
-          window.location.href = response.url;
+        const requestedFormat = String(formData.get('export_format') || 'csv');
+        const payload = await parseJson(response);
+
+        if (!response.ok) {
+          const errorMessage = payload.message || 'Export failed. Please try again.';
+          throw new Error(errorMessage);
+        }
+
+        if (payload.status === 'redirect' && payload.url) {
+          window.location.href = payload.url;
           return;
         }
 
-        if (!response.ok) {
-          throw new Error('Export failed');
+        if (payload.status !== 'ok' || !payload.download_url) {
+          const errorMessage = payload.message || 'Export failed. Please try again.';
+          throw new Error(errorMessage);
         }
 
         stopProgressSimulation();
-        updateProgress(82, 'Packaging download…');
+        updateProgress(86, 'Packaging download…');
 
-        const disposition = response.headers.get('Content-Disposition') || '';
-        const matches = disposition.match(/filename="?([^";]+)"?/i);
-        const requestedFormat = String(formData.get('export_format') || 'csv');
-        const filename = matches ? matches[1] : `export.${requestedFormat}`;
-        const blob = await response.blob();
+        triggerDownload(payload.download_url, requestedFormat);
 
-        updateProgress(100, 'Download ready!');
-
-        const downloadLink = document.createElement('a');
-        const url = window.URL.createObjectURL(blob);
-        downloadLink.href = url;
-        downloadLink.download = filename;
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        downloadLink.remove();
-        window.setTimeout(() => {
-          window.URL.revokeObjectURL(url);
-        }, 1000);
+        updateProgress(100, 'Download ready! Your download should begin shortly.');
 
         window.setTimeout(() => {
-          hideProgress();
-        }, 2000);
+          hideProgress(false);
+        }, 2200);
       } catch (error) {
         stopProgressSimulation();
-        updateProgress(0, 'Export failed. Please try again.');
+        updateProgress(0, error.message || 'Export failed. Please try again.');
         if (progressWrapper) {
           progressWrapper.classList.add('export-progress--error');
           window.setTimeout(() => {
@@ -161,6 +160,56 @@
         updateProgress(0, '');
       } else {
         setProgress(0);
+      }
+    }
+
+    async function parseJson(response) {
+      const text = await response.text();
+      try {
+        return text ? JSON.parse(text) : {};
+      } catch (error) {
+        console.error('Failed to parse JSON response', error);
+        return {};
+      }
+    }
+
+    function triggerDownload(downloadUrl, requestedFormat) {
+      if (!downloadUrl) {
+        return;
+      }
+
+      const url = appendCacheBuster(downloadUrl);
+
+      if (window.navigator && typeof window.navigator.msSaveOrOpenBlob === 'function') {
+        window.location.href = url;
+        return;
+      }
+
+      let downloadFrame = document.querySelector('[data-export-download-frame]');
+      if (!downloadFrame) {
+        downloadFrame = document.createElement('iframe');
+        downloadFrame.setAttribute('aria-hidden', 'true');
+        downloadFrame.setAttribute('tabindex', '-1');
+        downloadFrame.style.display = 'none';
+        downloadFrame.dataset.exportDownloadFrame = 'true';
+        document.body.appendChild(downloadFrame);
+      }
+
+      downloadFrame.src = url;
+
+      const completionMessage = requestedFormat === 'xlsx' ? 'Excel download requested.' : 'CSV download requested.';
+      if (progressStatus && !progressStatus.textContent) {
+        progressStatus.textContent = completionMessage;
+      }
+    }
+
+    function appendCacheBuster(url) {
+      try {
+        const parsed = new URL(url, window.location.origin);
+        parsed.searchParams.set('_', Date.now().toString());
+        return parsed.toString();
+      } catch (error) {
+        return url;
       }
     }
   }
