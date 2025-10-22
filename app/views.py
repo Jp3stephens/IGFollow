@@ -76,6 +76,7 @@ def add_account():
             db.session.add(account)
             db.session.commit()
 
+            service = get_instagram_service()
             try:
                 refreshed = _ensure_instagram_snapshots(account, force=True)
             except InstagramServiceError as exc:
@@ -87,8 +88,13 @@ def add_account():
             else:
                 if refreshed:
                     flash("Account added and synced with Instagram.", "success")
-                else:
+                elif service.is_configured:
                     flash("Account added. We'll keep checking Instagram for updates.", "success")
+                else:
+                    flash(
+                        "Account added. Connect Instagram credentials to enable automatic syncing, or upload snapshots manually.",
+                        "info",
+                    )
             return redirect(url_for("main.view_account", account_id=account.id))
 
     return render_template("accounts/add.html")
@@ -228,9 +234,11 @@ def _ensure_instagram_snapshots(
 ) -> bool:
     service = get_instagram_service()
     if not service.is_configured:
-        raise InstagramServiceError(
-            "Instagram credentials are not configured. Set INSTAGRAM_USERNAME and INSTAGRAM_PASSWORD in the environment."
+        current_app.logger.info(
+            "Instagram service is not configured; skipping automatic sync for %s",
+            account.instagram_username,
         )
+        return False
 
     profile = service.fetch_profile(account.instagram_username)
     account.instagram_username = profile.username

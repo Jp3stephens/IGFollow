@@ -54,7 +54,7 @@ def _seed_account() -> tuple[User, TrackedAccount, Snapshot]:
     return user, account, snapshot
 
 
-def test_ajax_export_provides_download_url(app, client):
+def test_ajax_export_provides_download_url(app, client, stub_instagram):
     with app.app_context():
         user, account, snapshot = _seed_account()
         user_email = user.email
@@ -129,3 +129,30 @@ def test_ajax_export_truncates_when_over_limit(app, client):
     body = download_response.get_data(as_text=True).strip().splitlines()
     # header + limited rows
     assert len(body) == payload["exported_rows"] + 1
+
+
+def test_export_skips_instagram_when_not_configured(app, client, stub_instagram):
+    # Simulate missing credentials
+    stub_instagram.is_configured = False
+
+    with app.app_context():
+        user, account, snapshot = _seed_account()
+        user_email = user.email
+        account_id = account.id
+
+    login_response = client.post(
+        "/login",
+        data={"email": user_email, "password": "secret123"},
+        follow_redirects=True,
+    )
+    assert login_response.status_code == 200
+
+    response = client.post(
+        f"/accounts/{account_id}/export",
+        data={"snapshot_type": "followers", "export_format": "csv"},
+        headers={"X-Requested-With": "XMLHttpRequest", "Accept": "application/json"},
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["status"] == "ok"
