@@ -7,6 +7,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_migrate import Migrate
 from flask_wtf import CSRFProtect
+from sqlalchemy import inspect, text
 from sqlalchemy.engine import make_url
 from flask_wtf.csrf import CSRFError
 
@@ -69,6 +70,8 @@ def create_app(config_class: type = Config) -> Flask:
         referer = request.headers.get("Referer")
         return redirect(referer or url_for("main.dashboard"))
 
+    _run_startup_schema_migrations(app)
+
     return app
 
 
@@ -100,3 +103,48 @@ def _ensure_sqlite_directory(app: Flask) -> None:
     directory = os.path.dirname(database)
     if directory:
         os.makedirs(directory, exist_ok=True)
+
+
+def _run_startup_schema_migrations(app: Flask) -> None:
+    """Ensure legacy SQLite databases pick up newly added columns."""
+
+    with app.app_context():
+        engine = db.engine
+        inspector = inspect(engine)
+
+        existing_tables = set(inspector.get_table_names())
+        if {"user", "tracked_account", "snapshot", "snapshot_entry"} - existing_tables:
+            db.create_all()
+            inspector = inspect(engine)
+
+        def ensure_columns(table_name: str, definitions: dict[str, str]) -> None:
+            nonlocal inspector
+            if table_name not in inspector.get_table_names():
+                return
+
+            existing = {column["name"] for column in inspector.get_columns(table_name)}
+            pending = {name: ddl for name, ddl in definitions.items() if name not in existing}
+            if not pending:
+                return
+
+            with engine.begin() as connection:
+                for column_name, ddl in pending.items():
+                    connection.execute(text(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {ddl}"))
+
+            # Refresh inspector metadata so subsequent checks see the new columns
+            inspector = inspect(engine)
+
+        ensure_columns(
+            "tracked_account",
+            {
+                "instagram_user_id": "VARCHAR(64)",
+                "profile_picture_url": "VARCHAR(512)",
+            },
+        )
+        ensure_columns(
+            "snapshot_entry",
+            {
+                "full_name": "VARCHAR(255)",
+                "profile_pic_url": "VARCHAR(512)",
+            },
+        )

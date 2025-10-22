@@ -67,6 +67,9 @@ flask --app run.py db upgrade
 
 These commands create the user, tracked account, snapshot, and snapshot entry tables (including Instagram profile metadata).
 
+> Upgrading from an earlier clone? The app now auto-applies the latest SQLite column additions on startup, so simply rerunning
+> the server will patch older local databases. `flask db upgrade` remains recommended for production or non-SQLite deployments.
+
 ### 5. Run the application
 
 ```bash
