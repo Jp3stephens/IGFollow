@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from urllib.parse import urlparse
-
 import pytest
 
 from app import create_app, db
@@ -88,7 +86,7 @@ def test_ajax_export_provides_download_url(app, client):
     assert "alice" in body and "bob" in body
 
 
-def test_ajax_export_respects_paywall(app, client):
+def test_ajax_export_truncates_when_over_limit(app, client):
     with app.app_context():
         user, account, snapshot = _seed_account()
         user_email = user.email
@@ -117,7 +115,17 @@ def test_ajax_export_respects_paywall(app, client):
         headers={"X-Requested-With": "XMLHttpRequest", "Accept": "application/json"},
     )
 
-    assert response.status_code == 402
+    assert response.status_code == 200
     payload = response.get_json()
-    assert payload["status"] == "redirect"
-    assert urlparse(payload["url"]).path == "/paywall"
+    assert payload["status"] == "ok"
+    assert payload.get("limited") is True
+    assert payload.get("exported_rows") == app.config.get("MAX_FREE_EXPORT", 600)
+    assert payload.get("total_rows") > payload.get("exported_rows")
+    assert "Free plan exports" in (payload.get("message") or "")
+
+    download_response = client.get(payload["download_url"])
+    assert download_response.status_code == 200
+
+    body = download_response.get_data(as_text=True).strip().splitlines()
+    # header + limited rows
+    assert len(body) == payload["exported_rows"] + 1

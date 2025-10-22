@@ -97,7 +97,12 @@
 
         triggerDownload(payload.download_url, requestedFormat);
 
-        updateProgress(100, 'Download ready! Your download should begin shortly.');
+        const finalMessage = payload.message
+          || (payload.limited
+            ? 'Download ready! Showing the first portion of your export.'
+            : 'Download ready! Your download should begin shortly.');
+
+        updateProgress(100, finalMessage);
 
         window.setTimeout(() => {
           hideProgress(false);

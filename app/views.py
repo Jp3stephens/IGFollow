@@ -84,6 +84,8 @@ def add_account():
 @login_required
 def view_account(account_id: int):
     account = _get_account_or_404(account_id)
+    followers_snapshot = account.latest_snapshot("followers")
+    following_snapshot = account.latest_snapshot("following")
     followers = _latest_diff(account, "followers")
     following = _latest_diff(account, "following")
     return render_template(
@@ -91,6 +93,10 @@ def view_account(account_id: int):
         account=account,
         followers_diff=followers,
         following_diff=following,
+        followers_snapshot=followers_snapshot,
+        following_snapshot=following_snapshot,
+        followers_entries=_snapshot_entries(followers_snapshot) if followers_snapshot else [],
+        following_entries=_snapshot_entries(following_snapshot) if following_snapshot else [],
     )
 
 
@@ -195,22 +201,39 @@ def export_snapshot(account_id: int):
         flash(message, "warning")
         return redirect(url_for("main.view_account", account_id=account.id))
 
-    data = _snapshot_entries(latest_snapshot)
-    if exceeds_free_limit(len(data)) and not current_user.is_subscribed:
-        message = "Upgrade required to export more than 600 profiles."
-        if expects_json:
-            return jsonify({"status": "redirect", "url": url_for("main.paywall")}), 402
-        flash(message, "danger")
-        return redirect(url_for("main.paywall"))
+    export_limit = None
+    message = None
+    total_rows = len(latest_snapshot.entries)
+    max_free = current_app.config.get("MAX_FREE_EXPORT", 600)
+    if not current_user.is_subscribed and total_rows > max_free:
+        export_limit = max_free
+        message = (
+            f"Free plan exports include the first {max_free:,} profiles. Upgrade to download all {total_rows:,}."
+        )
+
+    data = _snapshot_entries(latest_snapshot, limit=export_limit)
+
+    if export_limit and not expects_json and message:
+        flash(message, "warning")
 
     if expects_json:
-        token = _create_export_token(latest_snapshot, export_format)
+        token = _create_export_token(latest_snapshot, export_format, limit=export_limit)
         download_url = url_for(
             "main.export_snapshot_download",
             account_id=account.id,
             token=token,
         )
-        return jsonify({"status": "ok", "download_url": download_url})
+        payload = {"status": "ok", "download_url": download_url}
+        if export_limit:
+            payload.update(
+                {
+                    "limited": True,
+                    "total_rows": total_rows,
+                    "exported_rows": len(data),
+                    "message": message,
+                }
+            )
+        return jsonify(payload)
 
     if export_format == "csv":
         return _export_csv(account, snapshot_type, data)
@@ -237,6 +260,7 @@ def export_snapshot_download(account_id: int):
     snapshot_id = payload.get("snapshot_id")
     snapshot_type = payload.get("snapshot_type")
     export_format = payload.get("format", "csv")
+    limit = payload.get("limit")
 
     snapshot = Snapshot.query.filter_by(
         id=snapshot_id, tracked_account_id=account.id, snapshot_type=snapshot_type
@@ -244,24 +268,48 @@ def export_snapshot_download(account_id: int):
     if not snapshot:
         abort(404)
 
-    data = _snapshot_entries(snapshot)
-    if exceeds_free_limit(len(data)) and not current_user.is_subscribed:
-        flash("Upgrade required to export more than 600 profiles.", "danger")
-        return redirect(url_for("main.paywall"))
+    data = _snapshot_entries(snapshot, limit=limit)
+    if limit and exceeds_free_limit(len(snapshot.entries)) and not current_user.is_subscribed:
+        flash(
+            f"Free plan exports include the first {limit:,} profiles. Upgrade for full downloads.",
+            "warning",
+        )
 
     if export_format == "csv":
         return _export_csv(account, snapshot_type, data)
     return _export_excel(account, snapshot_type, data)
 
 
-def _snapshot_entries(snapshot: Snapshot) -> list[dict[str, Optional[str]]]:
-    return [
-        {"username": entry.username, "full_name": entry.full_name or ""}
-        for entry in snapshot.entries
-    ]
+def _snapshot_entries(
+    snapshot: Optional[Snapshot], limit: Optional[int] = None
+) -> list[dict[str, Optional[str]]]:
+    if not snapshot:
+        return []
+
+    entries = sorted(
+        snapshot.entries,
+        key=lambda entry: (entry.username or "").lower(),
+    )
+
+    if limit is not None:
+        entries = entries[:limit]
+
+    results: list[dict[str, Optional[str]]] = []
+    for entry in entries:
+        username = entry.username
+        results.append(
+            {
+                "username": username,
+                "full_name": entry.full_name or "",
+                "avatar_url": _avatar_url(username),
+            }
+        )
+    return results
 
 
-def _create_export_token(snapshot: Snapshot, export_format: str) -> str:
+def _create_export_token(
+    snapshot: Snapshot, export_format: str, limit: Optional[int] = None
+) -> str:
     serializer = _export_serializer()
     payload = {
         "account_id": snapshot.tracked_account_id,
@@ -269,6 +317,8 @@ def _create_export_token(snapshot: Snapshot, export_format: str) -> str:
         "snapshot_type": snapshot.snapshot_type,
         "format": export_format,
     }
+    if limit is not None:
+        payload["limit"] = limit
     return serializer.dumps(payload)
 
 
@@ -287,7 +337,7 @@ def _export_csv(account: TrackedAccount, snapshot_type: str, data: Iterable[dict
     writer = csv.DictWriter(output, fieldnames=["username", "full_name"])
     writer.writeheader()
     for row in data:
-        writer.writerow(row)
+        writer.writerow({"username": row.get("username", ""), "full_name": row.get("full_name", "")})
 
     filename = _export_filename(account.instagram_username, snapshot_type, "csv")
     return Response(
@@ -305,7 +355,7 @@ def _export_excel(account: TrackedAccount, snapshot_type: str, data: Iterable[di
     sheet.title = f"{snapshot_type.title()}"
     sheet.append(["username", "full_name"])
     for row in data:
-        sheet.append([row["username"], row["full_name"]])
+        sheet.append([row.get("username", ""), row.get("full_name", "")])
 
     stream = io.BytesIO()
     workbook.save(stream)
@@ -323,6 +373,13 @@ def _export_excel(account: TrackedAccount, snapshot_type: str, data: Iterable[di
 def _export_filename(username: str, snapshot_type: str, extension: str) -> str:
     timestamp = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
     return f"{username}-{snapshot_type}-{timestamp}.{extension}"
+
+
+def _avatar_url(username: str) -> str:
+    safe_username = (username or "").strip()
+    if not safe_username:
+        return ""
+    return f"https://unavatar.io/instagram/{safe_username}"
 
 
 @main_bp.route("/paywall")

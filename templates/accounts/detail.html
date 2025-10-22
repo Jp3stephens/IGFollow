@@ -81,6 +81,79 @@
 
 <div class="row g-4 mt-2">
   <div class="col-lg-6">
+    <div class="card shadow-sm h-100 snapshot-card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+          <div>
+            <h2 class="h5 mb-0">Latest followers snapshot</h2>
+            <p class="text-muted small mb-0">Most recent upload of who follows @{{ account.instagram_username }}.</p>
+          </div>
+          {% if followers_snapshot %}
+          <span class="badge bg-primary-subtle text-primary-emphasis">{{ followers_snapshot.entries|length }} profiles</span>
+          {% endif %}
+        </div>
+        {% if followers_entries %}
+        <div class="snapshot-grid" data-avatar>
+          {% for entry in followers_entries %}
+          <div class="snapshot-tile">
+            <div class="avatar avatar-md flex-shrink-0" data-avatar>
+              <img src="{{ entry.avatar_url }}" alt="@{{ entry.username }} profile picture" loading="lazy">
+              <span class="avatar-fallback">{{ entry.username[:1]|upper }}</span>
+            </div>
+            <div class="snapshot-tile-body">
+              <div class="snapshot-username">@{{ entry.username }}</div>
+              {% if entry.full_name %}
+              <div class="snapshot-name text-muted small">{{ entry.full_name }}</div>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Upload a followers export to populate this list.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card shadow-sm h-100 snapshot-card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+          <div>
+            <h2 class="h5 mb-0">Latest following snapshot</h2>
+            <p class="text-muted small mb-0">Most recent upload of accounts @{{ account.instagram_username }} follows.</p>
+          </div>
+          {% if following_snapshot %}
+          <span class="badge bg-primary-subtle text-primary-emphasis">{{ following_snapshot.entries|length }} profiles</span>
+          {% endif %}
+        </div>
+        {% if following_entries %}
+        <div class="snapshot-grid">
+          {% for entry in following_entries %}
+          <div class="snapshot-tile">
+            <div class="avatar avatar-md flex-shrink-0" data-avatar>
+              <img src="{{ entry.avatar_url }}" alt="@{{ entry.username }} profile picture" loading="lazy">
+              <span class="avatar-fallback">{{ entry.username[:1]|upper }}</span>
+            </div>
+            <div class="snapshot-tile-body">
+              <div class="snapshot-username">@{{ entry.username }}</div>
+              {% if entry.full_name %}
+              <div class="snapshot-name text-muted small">{{ entry.full_name }}</div>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Upload a following export to populate this list.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mt-2">
+  <div class="col-lg-6">
     <div class="card shadow-sm h-100">
       <div class="card-body">
         <h2 class="h5 d-flex justify-content-between align-items-center">Followers diff
