@@ -27,12 +27,12 @@ def create_app(config_class: type = Config) -> Flask:
     )
     app.config.from_object(config_class)
 
-    _ensure_sqlite_directory(app.config.get("SQLALCHEMY_DATABASE_URI"))
-
     try:
         os.makedirs(app.instance_path, exist_ok=True)
     except OSError:
         pass
+
+    _ensure_sqlite_directory(app)
 
     db.init_app(app)
     migrate.init_app(app, db)
@@ -56,9 +56,10 @@ def create_app(config_class: type = Config) -> Flask:
     return app
 
 
-def _ensure_sqlite_directory(database_uri: Optional[str]) -> None:
+def _ensure_sqlite_directory(app: Flask) -> None:
     """Create the parent directory for SQLite databases if needed."""
 
+    database_uri: Optional[str] = app.config.get("SQLALCHEMY_DATABASE_URI")
     if not database_uri:
         return
 
@@ -71,8 +72,14 @@ def _ensure_sqlite_directory(database_uri: Optional[str]) -> None:
         return
 
     database = url.database
-    if not database:
+    if not database or database == ":memory:":
         return
+
+    if not os.path.isabs(database):
+        project_root = os.path.abspath(os.path.join(app.root_path, os.pardir))
+        database = os.path.abspath(os.path.join(project_root, database))
+        url = url.set(database=database)
+        app.config["SQLALCHEMY_DATABASE_URI"] = str(url)
 
     directory = os.path.dirname(database)
     if directory:
