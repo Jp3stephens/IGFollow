@@ -40,6 +40,12 @@ class TrackedAccount(db.Model):
             .first()
         )
 
+    @property
+    def profile_image_url(self) -> str:
+        """Return a best-effort URL for the Instagram avatar."""
+
+        return f"https://unavatar.io/instagram/{self.instagram_username}"  # pragma: no cover - simple helper
+
 
 class Snapshot(db.Model):
     id = db.Column(db.Integer, primary_key=True)

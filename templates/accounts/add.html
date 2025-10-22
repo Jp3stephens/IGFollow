@@ -13,8 +13,15 @@
             <label class="form-label" for="username">Instagram handle</label>
             <div class="input-group">
               <span class="input-group-text">@</span>
-              <input type="text" class="form-control" id="username" name="username" placeholder="creator" required>
+              <input type="text" class="form-control" id="username" name="username" placeholder="creator" required data-username-input>
             </div>
+          </div>
+          <div class="profile-preview text-center d-none" data-profile-preview>
+            <div class="avatar avatar-xl mx-auto mb-2" data-avatar>
+              <img src="" alt="Profile preview" loading="lazy" data-profile-image>
+              <span class="avatar-fallback" data-profile-fallback>@</span>
+            </div>
+            <p class="small text-muted mb-0">Live profile preview</p>
           </div>
           <div class="mb-3">
             <label class="form-label" for="notes">Notes (optional)</label>

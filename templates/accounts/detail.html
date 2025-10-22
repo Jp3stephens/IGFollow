@@ -1,12 +1,23 @@
 {% extends 'base.html' %}
 {% block title %}@{{ account.instagram_username }} - IGFollow Tracker{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <div>
-    <h1 class="h3">@{{ account.instagram_username }}</h1>
-    {% if account.notes %}<p class="text-muted mb-0">{{ account.notes }}</p>{% endif %}
+<div class="card account-hero shadow-sm mb-4">
+  <div class="card-body d-flex flex-column flex-md-row align-items-center gap-3">
+    <div class="d-flex align-items-center gap-3 flex-grow-1 w-100">
+      <div class="avatar avatar-xl flex-shrink-0" data-avatar>
+        <img src="{{ account.profile_image_url }}" alt="@{{ account.instagram_username }} profile picture" loading="lazy">
+        <span class="avatar-fallback">{{ account.instagram_username[:1]|upper }}</span>
+      </div>
+      <div class="flex-grow-1">
+        <h1 class="h3 mb-1">@{{ account.instagram_username }}</h1>
+        {% if account.notes %}
+        <p class="text-muted mb-1">{{ account.notes }}</p>
+        {% endif %}
+        <p class="text-muted small mb-0">Tracking since {{ account.created_at.strftime('%b %d, %Y') }}</p>
+      </div>
+    </div>
+    <a class="btn btn-outline-secondary ms-md-auto" href="{{ url_for('main.dashboard') }}">Back to dashboard</a>
   </div>
-  <a class="btn btn-outline-secondary" href="{{ url_for('main.dashboard') }}">Back to dashboard</a>
 </div>
 
 <div class="row g-4">
@@ -38,7 +49,7 @@
       <div class="card-body">
         <h2 class="h5">Export latest data</h2>
         <p class="text-muted small">Exports are limited to {{ max_free_export }} rows per list on the free plan.</p>
-        <form method="post" action="{{ url_for('main.export_snapshot', account_id=account.id) }}">
+        <form method="post" action="{{ url_for('main.export_snapshot', account_id=account.id) }}" data-export-form>
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <div class="mb-3">
             <label for="export_snapshot_type" class="form-label">List type</label>
@@ -54,8 +65,15 @@
               <option value="xlsx">Excel</option>
             </select>
           </div>
-          <button class="btn btn-success" type="submit">Download</button>
+          <button class="btn btn-success" type="submit" data-export-submit>Download</button>
         </form>
+        <div class="export-progress d-none" data-export-progress>
+          <div class="progress">
+            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;"
+              aria-valuemin="0" aria-valuemax="100">Preparing export…</div>
+          </div>
+          <p class="small text-muted mt-2 mb-0" data-export-status>Hang tight while we assemble your download.</p>
+        </div>
       </div>
     </div>
   </div>
