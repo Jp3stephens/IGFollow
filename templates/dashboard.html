@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard - IGFollow Tracker{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h2 fw-bold">Welcome back 👋</h1>
+    <p class="text-muted mb-0">Track Instagram accounts, surface follower shifts, and export insights instantly.</p>
+  </div>
+  <a href="{{ url_for('main.add_account') }}" class="btn btn-primary btn-lg">Add account</a>
+</div>
+
+{% if not instagram_connected %}
+<div class="alert alert-info shadow-sm mb-4">
+  <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
+    <div>
+      <strong>Connect Instagram for live syncing.</strong> Link your account to fetch followers and following without manual uploads.
+    </div>
+    {% if instagram_available %}
+    <a class="btn btn-success" href="{{ url_for('main.instagram_settings') }}">Connect now</a>
+    {% else %}
+    <span class="badge bg-secondary">Install instagrapi to enable</span>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% if accounts %}
+<div class="row g-4">
+  {% for account in accounts %}
+  <div class="col-md-6">
+    <div class="card shadow-sm h-100 account-card">
+      <div class="card-body">
+        <div class="d-flex align-items-start gap-3">
+          <div class="avatar avatar-lg flex-shrink-0" data-avatar>
+            <img src="{{ account.profile_image_url }}" alt="@{{ account.instagram_username }} profile picture" loading="lazy">
+            <span class="avatar-fallback">{{ account.instagram_username[:1]|upper }}</span>
+          </div>
+          <div class="flex-grow-1">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <h2 class="h5 mb-1">@{{ account.instagram_username }}</h2>
+                {% if account.notes %}
+                <p class="text-muted small mb-1">{{ account.notes }}</p>
+                {% endif %}
+              </div>
+              <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('main.view_account', account_id=account.id) }}">Open</a>
+            </div>
+            <div class="small text-muted">Tracking since {{ account.created_at.strftime('%b %d, %Y') }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-5">
+  <p class="lead">You haven't added any accounts yet.</p>
+  <a class="btn btn-success" href="{{ url_for('main.add_account') }}">Start tracking</a>
+</div>
+{% endif %}
+{% endblock %}
