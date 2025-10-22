@@ -2,12 +2,13 @@ from datetime import datetime
 import os
 from typing import Optional
 
-from flask import Flask
+from flask import Flask, flash, jsonify, redirect, request, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_migrate import Migrate
 from flask_wtf import CSRFProtect
 from sqlalchemy.engine import make_url
+from flask_wtf.csrf import CSRFError
 
 from .config import Config
 
@@ -55,6 +56,15 @@ def create_app(config_class: type = Config) -> Flask:
             "now": datetime.utcnow(),
             "max_free_export": app.config.get("MAX_FREE_EXPORT", 600),
         }
+
+    @app.errorhandler(CSRFError)
+    def handle_csrf_error(error: CSRFError):  # pragma: no cover - exercised in integration tests
+        message = error.description or "Your session expired. Please refresh and try again."
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest" or request.accept_mimetypes.accept_json:
+            return jsonify({"status": "error", "message": message}), 400
+        flash(message, "danger")
+        referer = request.headers.get("Referer")
+        return redirect(referer or url_for("main.dashboard"))
 
     return app
 

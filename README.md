@@ -7,11 +7,12 @@ IGFollow Tracker is a Flask web application that helps you monitor how an Instag
 ## Features
 
 - Landing page, authentication, and dashboard for managing tracked accounts.
-- Upload follower or following CSV exports (username/full_name columns supported).
+- Upload follower or following exports in CSV, JSON, or plain-text formats straight from Instagram's "Download your information" bundle.
 - Store each snapshot in a relational database for long-term comparison.
 - Automatically compute differences between the latest two snapshots.
-- Export the newest snapshot to CSV or Excel.
+- Export the newest snapshot to CSV or Excel with a progress indicator and instant download trigger.
 - Paywall guard that requires a subscription for exports larger than 600 profiles (configurable via `MAX_FREE_EXPORT`).
+- Profile previews and avatars pulled via Unavatar to keep the UI feeling connected to the tracked handle.
 
 ## Tech Stack
 
@@ -73,10 +74,10 @@ Visit [http://127.0.0.1:5000](http://127.0.0.1:5000) to access the landing page 
 
 1. Register or log in.
 2. Add an Instagram handle to track.
-3. Upload follower and following CSV files (use Instagram's data download).
+3. Upload follower and following exports (CSV, JSON, or even plain username lists).
 4. Re-upload new exports whenever you want to compare changes.
 5. Review the difference report on the account detail page.
-6. Export the latest snapshot as CSV/Excel; upgrade if you exceed the free plan limit.
+6. Export the latest snapshot as CSV/Excel using the built-in progress bar; upgrade if you exceed the free plan limit.
 
 ## Paywall & Subscription Logic
 
@@ -96,7 +97,7 @@ gunicorn 'run:app'
 
 ## Testing
 
-A minimal test suite is provided for core diff logic. Run with:
+The test suite covers diff logic, parsers, and an end-to-end happy path (including CSRF-protected requests). Run with:
 
 ```bash
 pytest

@@ -134,10 +134,12 @@ def upload_snapshot(account_id: int):
         flash("Please select a CSV export to upload.", "danger")
         return redirect(url_for("main.view_account", account_id=account.id))
 
-    rows = parse_snapshot_file(file.stream)
+    rows = parse_snapshot_file(file)
     if not rows:
         flash("No rows were found in the uploaded file.", "warning")
         return redirect(url_for("main.view_account", account_id=account.id))
+
+    previous_snapshot = account.latest_snapshot(snapshot_type)
 
     snapshot = Snapshot(tracked_account_id=account.id, snapshot_type=snapshot_type)
     db.session.add(snapshot)
@@ -150,10 +152,21 @@ def upload_snapshot(account_id: int):
         usernames.append(username)
 
     db.session.commit()
-    flash(
-        f"Snapshot stored with {len(usernames)} entries. We'll compare it to previous uploads.",
-        "success",
-    )
+
+    if previous_snapshot:
+        previous_usernames = [entry.username for entry in previous_snapshot.entries]
+        diff = compute_diff(previous_usernames, usernames)
+        flash(
+            "Snapshot stored. Added {added} new and lost {removed} compared to the previous upload.".format(
+                added=len(diff.added), removed=len(diff.removed)
+            ),
+            "success",
+        )
+    else:
+        flash(
+            f"Snapshot stored with {len(usernames)} entries. We'll compare it to future uploads.",
+            "success",
+        )
     return redirect(url_for("main.view_account", account_id=account.id))
 
 

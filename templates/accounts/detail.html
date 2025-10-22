@@ -84,7 +84,11 @@
     <div class="card shadow-sm h-100">
       <div class="card-body">
         <h2 class="h5 d-flex justify-content-between align-items-center">Followers diff
+          {% if followers_diff %}
+          <span class="badge bg-secondary">{{ followers_diff.added|length }} new · {{ followers_diff.removed|length }} lost</span>
+          {% else %}
           <span class="badge bg-secondary">Latest</span>
+          {% endif %}
         </h2>
         {% if followers_diff %}
           <div class="row small">
@@ -123,7 +127,11 @@
     <div class="card shadow-sm h-100">
       <div class="card-body">
         <h2 class="h5 d-flex justify-content-between align-items-center">Following diff
+          {% if following_diff %}
+          <span class="badge bg-secondary">{{ following_diff.added|length }} new · {{ following_diff.removed|length }} lost</span>
+          {% else %}
           <span class="badge bg-secondary">Latest</span>
+          {% endif %}
         </h2>
         {% if following_diff %}
           <div class="row small">

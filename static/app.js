@@ -65,6 +65,7 @@
           headers: {
             'X-Requested-With': 'XMLHttpRequest',
             Accept: 'application/json',
+            'X-CSRFToken': getCsrfToken(exportForm),
           },
         });
 
@@ -72,6 +73,11 @@
         const payload = await parseJson(response);
 
         if (!response.ok) {
+          const errorMessage = payload.message || 'Export failed. Please try again.';
+          throw new Error(errorMessage);
+        }
+
+        if (payload.status === 'error') {
           const errorMessage = payload.message || 'Export failed. Please try again.';
           throw new Error(errorMessage);
         }
@@ -212,6 +218,17 @@
         return url;
       }
     }
+  }
+
+  function getCsrfToken(scope) {
+    if (scope) {
+      const field = scope.querySelector('input[name="csrf_token"]');
+      if (field && field.value) {
+        return field.value;
+      }
+    }
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    return meta ? meta.getAttribute('content') || '' : '';
   }
 
   function initProfilePreview() {
