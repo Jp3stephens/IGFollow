@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+{% block title %}@{{ account.instagram_username }} - IGFollow Tracker{% endblock %}
+{% block content %}
+<div class="card account-hero shadow-sm mb-4">
+  <div class="card-body d-flex flex-column flex-md-row align-items-center gap-3">
+    <div class="d-flex align-items-center gap-3 flex-grow-1 w-100">
+      <div class="avatar avatar-xl flex-shrink-0" data-avatar>
+        <img src="{{ account.profile_image_url }}" alt="@{{ account.instagram_username }} profile picture" loading="lazy">
+        <span class="avatar-fallback">{{ account.instagram_username[:1]|upper }}</span>
+      </div>
+      <div class="flex-grow-1">
+        <h1 class="h3 mb-1">@{{ account.instagram_username }}</h1>
+        {% if account.notes %}
+        <p class="text-muted mb-1">{{ account.notes }}</p>
+        {% endif %}
+        <p class="text-muted small mb-0">Tracking since {{ account.created_at.strftime('%b %d, %Y') }}</p>
+      </div>
+    </div>
+    <a class="btn btn-outline-secondary ms-md-auto" href="{{ url_for('main.dashboard') }}">Back to dashboard</a>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-6">
+    <div class="card h-100 shadow-sm">
+      <div class="card-body">
+        <h2 class="h5">Upload latest export</h2>
+        <p class="text-muted small">Download your followers/following list from Instagram (Settings → Account → Your activity → Download your information → Followers and Following) and upload the CSV file here.</p>
+        <form method="post" action="{{ url_for('main.upload_snapshot', account_id=account.id) }}" enctype="multipart/form-data">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="mb-3">
+            <label for="snapshot_type" class="form-label">List type</label>
+            <select class="form-select" name="snapshot_type" id="snapshot_type" required>
+              <option value="followers">Followers</option>
+              <option value="following">Following</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="snapshot_file">CSV export</label>
+            <input class="form-control" type="file" id="snapshot_file" name="snapshot_file" accept=".csv" required>
+          </div>
+          <button class="btn btn-primary" type="submit">Upload snapshot</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card h-100 shadow-sm">
+      <div class="card-body">
+        <h2 class="h5">Export latest data</h2>
+        <p class="text-muted small">Exports are limited to {{ max_free_export }} rows per list on the free plan.</p>
+        <form method="post" action="{{ url_for('main.export_snapshot', account_id=account.id) }}" data-export-form>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="mb-3">
+            <label for="export_snapshot_type" class="form-label">List type</label>
+            <select class="form-select" name="snapshot_type" id="export_snapshot_type" required>
+              <option value="followers">Followers</option>
+              <option value="following">Following</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="export_format" class="form-label">Format</label>
+            <select class="form-select" name="export_format" id="export_format" required>
+              <option value="csv">CSV</option>
+              <option value="xlsx">Excel</option>
+            </select>
+          </div>
+          <button class="btn btn-success" type="submit" data-export-submit>Download</button>
+        </form>
+        <div class="export-progress d-none" data-export-progress>
+          <div class="progress">
+            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;"
+              aria-valuemin="0" aria-valuemax="100">Preparing export…</div>
+          </div>
+          <p class="small text-muted mt-2 mb-0" data-export-status>Hang tight while we assemble your download.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mt-2">
+  <div class="col-lg-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <h2 class="h5 d-flex justify-content-between align-items-center">Followers diff
+          <span class="badge bg-secondary">Latest</span>
+        </h2>
+        {% if followers_diff %}
+          <div class="row small">
+            <div class="col-md-6">
+              <h3 class="h6">New followers</h3>
+              {% if followers_diff.added %}
+                <ul class="list-unstyled">
+                  {% for username in followers_diff.added %}
+                  <li>@{{ username }}</li>
+                  {% endfor %}
+                </ul>
+              {% else %}
+                <p class="text-muted">No new followers.</p>
+              {% endif %}
+            </div>
+            <div class="col-md-6">
+              <h3 class="h6">Lost followers</h3>
+              {% if followers_diff.removed %}
+                <ul class="list-unstyled">
+                  {% for username in followers_diff.removed %}
+                  <li>@{{ username }}</li>
+                  {% endfor %}
+                </ul>
+              {% else %}
+                <p class="text-muted">No losses recorded.</p>
+              {% endif %}
+            </div>
+          </div>
+        {% else %}
+          <p class="text-muted">Upload your first followers export to calculate changes.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <h2 class="h5 d-flex justify-content-between align-items-center">Following diff
+          <span class="badge bg-secondary">Latest</span>
+        </h2>
+        {% if following_diff %}
+          <div class="row small">
+            <div class="col-md-6">
+              <h3 class="h6">New accounts followed</h3>
+              {% if following_diff.added %}
+                <ul class="list-unstyled">
+                  {% for username in following_diff.added %}
+                  <li>@{{ username }}</li>
+                  {% endfor %}
+                </ul>
+              {% else %}
+                <p class="text-muted">No new follows.</p>
+              {% endif %}
+            </div>
+            <div class="col-md-6">
+              <h3 class="h6">Accounts unfollowed</h3>
+              {% if following_diff.removed %}
+                <ul class="list-unstyled">
+                  {% for username in following_diff.removed %}
+                  <li>@{{ username }}</li>
+                  {% endfor %}
+                </ul>
+              {% else %}
+                <p class="text-muted">No unfollows detected.</p>
+              {% endif %}
+            </div>
+          </div>
+        {% else %}
+          <p class="text-muted">Upload your first following export to calculate changes.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
