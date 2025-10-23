@@ -79,6 +79,22 @@ flask --app run.py run --debug
 
 Visit [http://127.0.0.1:5000](http://127.0.0.1:5000) to access the landing page and sign up.
 
+### Troubleshooting Instagram Connect
+
+If the **Instagram Connect** page reports "Instagram integration unavailable" after pulling the latest code:
+
+1. Activate your virtual environment.
+2. Reinstall dependencies so the new `instagrapi` and `cryptography` packages are present:
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+   (Alternatively install them directly with `pip install instagrapi cryptography`.)
+3. Restart the Flask development server.
+
+After those steps the connect form will be enabled and you can link your Instagram account.
+
 ## Usage Workflow
 
 1. Register or log in.

@@ -17,7 +17,8 @@
 
       {% if not instagram_available %}
       <div class="alert alert-danger">
-        <strong>Instagram integration unavailable.</strong> Install the <code>instagrapi</code> dependency and restart the server to enable direct syncing, or upload snapshots manually for now.
+        <strong>Instagram integration unavailable.</strong>
+        Run <code>pip install -r requirements.txt</code> (or <code>pip install instagrapi cryptography</code>) inside your virtual environment and restart the server to enable direct syncing, or upload snapshots manually for now.
       </div>
       {% endif %}
 
