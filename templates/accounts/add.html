@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}Add Account - IGFollow Tracker{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-8 col-lg-6">
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <h1 class="h4 mb-3">Add an Instagram account</h1>
+        <p class="text-muted">IGFollow will sync the latest followers and following automatically when Instagram is connected.</p>
+        {% if not instagram_connected %}
+        <div class="alert alert-info">
+          <strong>Tip:</strong>
+          {% if instagram_available %}
+          Link your Instagram account first for instant syncing—otherwise we'll wait for your first CSV upload.
+          <a href="{{ url_for('main.instagram_settings') }}" class="alert-link">Connect now</a>.
+          {% else %}
+          Install <code>instagrapi</code> to enable automatic syncing or continue with manual uploads.
+          {% if instagram_error %}
+          <div class="small text-muted mt-2 text-break">{{ instagram_error }}</div>
+          {% endif %}
+          {% endif %}
+        </div>
+        {% endif %}
+        <form method="post">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="mb-3">
+            <label class="form-label" for="username">Instagram handle</label>
+            <div class="input-group">
+              <span class="input-group-text">@</span>
+              <input type="text" class="form-control" id="username" name="username" placeholder="creator" required data-username-input>
+            </div>
+          </div>
+          <div class="profile-preview text-center d-none" data-profile-preview>
+            <div class="avatar avatar-xl mx-auto mb-2" data-avatar>
+              <img src="" alt="Profile preview" loading="lazy" data-profile-image>
+              <span class="avatar-fallback" data-profile-fallback>@</span>
+            </div>
+            <p class="small text-muted mb-0">Live profile preview</p>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="notes">Notes (optional)</label>
+            <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Campaign, tier, etc."></textarea>
+          </div>
+          <button class="btn btn-primary w-100" type="submit">Start tracking</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
