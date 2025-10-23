@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% block title %}IGFollow Tracker - Monitor Instagram Relationships{% endblock %}
+{% block content %}
+<section class="hero text-center py-5">
+  <h1 class="display-5 fw-bold">Stay Ahead of Instagram Relationship Changes</h1>
+  <p class="lead">Connect your Instagram credentials once, let IGFollow sync followers and following automatically, and spot who joined, left, or blocked you in seconds.</p>
+  <div class="mt-4">
+    <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg me-2">Start for Free</a>
+    <a href="#features" class="btn btn-outline-secondary btn-lg">See How It Works</a>
+  </div>
+</section>
+
+<section id="features" class="row g-4 py-5">
+  <div class="col-md-4">
+    <div class="card h-100 shadow-sm">
+      <div class="card-body">
+        <h5 class="card-title">Track Any Public Account</h5>
+          <p class="card-text">Monitor your own profile or analyze competitors. Automatic sync keeps your roster current, while manual CSV uploads let you backfill history.</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card h-100 shadow-sm">
+      <div class="card-body">
+        <h5 class="card-title">Visualize Changes Instantly</h5>
+        <p class="card-text">We automatically compare each upload to highlight new follows, unfollows, and potential blocks.</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card h-100 shadow-sm">
+      <div class="card-body">
+        <h5 class="card-title">Export Insights</h5>
+        <p class="card-text">Download CSV or Excel reports to share with clients or stakeholders. Free plan covers up to 600 profiles per export.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="py-5 bg-light rounded-3">
+  <div class="row align-items-center g-4">
+    <div class="col-md-6">
+      <h2>How It Works</h2>
+      <ol class="lead">
+        <li>Create your free account.</li>
+        <li>Add the Instagram handle you want to monitor.</li>
+        <li>Connect Instagram credentials for automatic sync or upload CSVs/JSON exports to backfill history.</li>
+        <li>Come back anytime to upload new exports and see what changed.</li>
+      </ol>
+    </div>
+    <div class="col-md-6">
+      <div class="bg-white p-4 rounded shadow-sm">
+        <h3 class="h5">Free vs. Pro</h3>
+        <ul class="list-group list-group-flush">
+          <li class="list-group-item"><strong>Free:</strong> Unlimited accounts, exports capped at 600 profiles.</li>
+          <li class="list-group-item"><strong>Pro:</strong> Unlimited exports, priority support, and automated alerts.</li>
+        </ul>
+        <div class="text-center mt-4">
+          <a href="{{ url_for('auth.register') }}" class="btn btn-success">Claim Your Spot</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="py-5 text-center">
+  <h2 class="mb-3">Ready to keep your relationships in check?</h2>
+  <p class="lead">Join social media teams and creators protecting their communities with IGFollow Tracker.</p>
+  <a class="btn btn-primary btn-lg" href="{{ url_for('auth.register') }}">Create Free Account</a>
+</section>
+{% endblock %}

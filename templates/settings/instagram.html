@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% block title %}Connect Instagram · IGFollow{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="settings-card">
+      <div class="d-flex align-items-center mb-4">
+        <div class="avatar avatar-xl me-3">
+          <div class="avatar-fallback">IG</div>
+        </div>
+        <div>
+          <h1 class="h3 mb-1">Instagram Connect</h1>
+          <p class="settings-meta mb-0">Securely link your Instagram account so we can automatically sync followers and following lists.</p>
+        </div>
+      </div>
+
+      {% if not instagram_available %}
+      <div class="alert alert-danger">
+        <strong>Instagram integration unavailable.</strong>
+        Run <code>pip install -r requirements.txt</code> (or <code>pip install instagrapi cryptography</code>) inside your virtual environment and restart the server to enable direct syncing, or upload snapshots manually for now.
+        {% if instagram_error %}
+        <div class="small mt-2 text-break">
+          <strong>Import error:</strong> {{ instagram_error }}
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      {% if instagram_connected and instagram_session %}
+      <div class="alert alert-success d-flex align-items-center justify-content-between">
+        <div>
+          <strong>Connected as @{{ instagram_session.instagram_username }}</strong>
+          <div class="small">Last authenticated {{ instagram_session.last_login_at.strftime('%b %d, %Y %I:%M %p') if instagram_session.last_login_at else 'recently' }}.</div>
+        </div>
+        <span class="badge bg-success bg-opacity-75">Auto Sync Enabled</span>
+      </div>
+      {% elif instagram_available %}
+      <div class="alert alert-warning">
+        <strong>No Instagram session detected.</strong> Connect below to unlock one-click exports without manual uploads.
+      </div>
+      {% endif %}
+
+      <form method="post" class="settings-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="row g-4">
+          <div class="col-md-6">
+            <label class="form-label" for="instagram_username">Instagram username</label>
+            <input type="text" class="form-control form-control-lg" id="instagram_username" name="instagram_username" placeholder="@yourhandle" value="{{ instagram_session.instagram_username if instagram_session else '' }}" {% if not instagram_available %}disabled{% endif %}>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="instagram_password">Password</label>
+            <input type="password" class="form-control form-control-lg" id="instagram_password" name="instagram_password" placeholder="Enter Instagram password" {% if not instagram_available %}disabled{% endif %}>
+          </div>
+        </div>
+        <div class="form-text mt-2">We encrypt your password with your app secret and store an Instagram session token—never raw credentials.</div>
+        <div class="d-flex align-items-center gap-3 mt-4">
+          <button class="btn btn-primary btn-lg px-4" type="submit" {% if not instagram_available %}disabled{% endif %}>Connect &amp; Sync</button>
+          {% if instagram_connected %}
+          <button class="btn btn-outline-secondary btn-lg" name="action" value="disconnect" type="submit">Disconnect</button>
+          {% endif %}
+        </div>
+      </form>
+
+      <hr class="my-5">
+
+      <div class="row g-4">
+        <div class="col-md-6">
+          <div class="p-4 rounded-4 bg-light h-100 shadow-sm">
+            <h2 class="h5">What happens when you connect?</h2>
+            <ul class="small mt-3 mb-0 list-unstyled">
+              <li class="mb-2">• We log in securely using the official Instagram API session.</li>
+              <li class="mb-2">• Followers &amp; following lists sync instantly—no CSV upload required.</li>
+              <li>• Every dashboard refresh keeps your data up to date automatically.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="p-4 rounded-4 bg-dark text-white h-100 shadow-sm">
+            <h2 class="h5">Need to stay manual?</h2>
+            <p class="small mb-3">You can continue uploading Instagram exports if preferred. Connect later anytime—your tracked accounts will pick up right where you left off.</p>
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-success">Back to dashboard</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
