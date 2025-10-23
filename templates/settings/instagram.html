@@ -19,6 +19,11 @@
       <div class="alert alert-danger">
         <strong>Instagram integration unavailable.</strong>
         Run <code>pip install -r requirements.txt</code> (or <code>pip install instagrapi cryptography</code>) inside your virtual environment and restart the server to enable direct syncing, or upload snapshots manually for now.
+        {% if instagram_error %}
+        <div class="small mt-2 text-break">
+          <strong>Import error:</strong> {{ instagram_error }}
+        </div>
+        {% endif %}
       </div>
       {% endif %}
 

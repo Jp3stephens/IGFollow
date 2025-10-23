@@ -81,7 +81,7 @@ Visit [http://127.0.0.1:5000](http://127.0.0.1:5000) to access the landing page 
 
 ### Troubleshooting Instagram Connect
 
-If the **Instagram Connect** page reports "Instagram integration unavailable" after pulling the latest code:
+If the **Instagram Connect** page reports "Instagram integration unavailable" after pulling the latest code (the banner now surfaces the exact Python import error underneath the headline):
 
 1. Activate your virtual environment.
 2. Reinstall dependencies so the new `instagrapi` and `cryptography` packages are present:
@@ -91,9 +91,9 @@ If the **Instagram Connect** page reports "Instagram integration unavailable" af
    ```
 
    (Alternatively install them directly with `pip install instagrapi cryptography`.)
-3. Restart the Flask development server.
+3. Refresh or restart the Flask development server so the new modules are loaded.
 
-After those steps the connect form will be enabled and you can link your Instagram account.
+After those steps the connect form will be enabled automatically. If the alert persists, review the import error printed under the banner—it will call out the missing package or system dependency that still needs attention.
 
 ## Usage Workflow
 

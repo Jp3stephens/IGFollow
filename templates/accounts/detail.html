@@ -29,6 +29,9 @@
       Connect Instagram to refresh this account without manual uploads.
       {% else %}
       Install the Instagram API dependency (`instagrapi`) and restart the server to enable automatic syncing.
+      {% if instagram_error %}
+      <div class="small text-muted mt-2 text-break">{{ instagram_error }}</div>
+      {% endif %}
       {% endif %}
     </div>
     {% if instagram_available %}

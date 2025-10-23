@@ -19,6 +19,9 @@
     <a class="btn btn-success" href="{{ url_for('main.instagram_settings') }}">Connect now</a>
     {% else %}
     <span class="badge bg-secondary">Install instagrapi to enable</span>
+    {% if instagram_error %}
+    <div class="small text-muted mt-2 text-break">{{ instagram_error }}</div>
+    {% endif %}
     {% endif %}
   </div>
 </div>

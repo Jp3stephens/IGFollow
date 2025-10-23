@@ -18,12 +18,15 @@ from flask import current_app
 from . import db
 from .models import InstagramSession, User
 
+INSTAGRAM_IMPORT_ERROR: Optional[str]
 try:  # pragma: no cover - imported lazily in tests
     from instagrapi import Client
     from instagrapi.exceptions import LoginRequired
-except Exception:  # pragma: no cover - dependency may be missing during docs builds
+    INSTAGRAM_IMPORT_ERROR = None
+except Exception as exc:  # pragma: no cover - dependency may be missing during docs builds
     Client = None  # type: ignore
     LoginRequired = Exception  # type: ignore
+    INSTAGRAM_IMPORT_ERROR = str(exc)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -38,22 +41,55 @@ class InstagramService:
 
     def __init__(self) -> None:
         self._client_cache: dict[int, Client] = {}
+        self._import_error: Optional[str] = INSTAGRAM_IMPORT_ERROR
 
     def init_app(self, app) -> None:
         app.extensions["instagram_service"] = self
 
-    @staticmethod
-    def is_available() -> bool:
-        return Client is not None
+    def is_available(self) -> bool:
+        return self._attempt_import()
+
+    def availability_error(self) -> Optional[str]:
+        self._attempt_import()
+        return self._import_error
+
+    def _attempt_import(self) -> bool:
+        global Client, LoginRequired
+
+        if Client is not None:
+            self._import_error = None
+            return True
+
+        try:  # pragma: no cover - exercised indirectly in environments without dependencies
+            from instagrapi import Client as ClientType
+            from instagrapi.exceptions import LoginRequired as LoginRequiredType
+        except Exception as exc:  # pragma: no cover - surfaced through UI messaging
+            self._import_error = str(exc)
+            Client = None  # type: ignore
+            LoginRequired = Exception  # type: ignore
+            return False
+
+        Client = ClientType  # type: ignore
+        LoginRequired = LoginRequiredType  # type: ignore
+        self._import_error = None
+        return True
+
+    def _require_available(self) -> None:
+        if self._attempt_import():
+            return
+
+        message = (
+            "Instagram integration is unavailable. Install instagrapi and cryptography to enable syncing."
+        )
+        if self._import_error:
+            message = f"{message} ({self._import_error})"
+        raise InstagramServiceError(message)
 
     def is_connected(self, user: User) -> bool:
         return bool(user.instagram_session and user.instagram_session.settings_json)
 
     def connect_user(self, user: User, username: str, password: str) -> None:
-        if Client is None:
-            raise InstagramServiceError(
-                "instagrapi is not installed. Install dependencies to enable Instagram syncing."
-            )
+        self._require_available()
 
         username = username.strip().lstrip("@")
         if not username or not password:
@@ -64,7 +100,7 @@ class InstagramService:
                 "cryptography is required to encrypt Instagram credentials. Install the optional dependency to connect."
             )
 
-        client = Client()
+        client = Client()  # type: ignore[call-arg]
         try:
             client.login(username, password)
         except Exception as exc:  # pragma: no cover - network failures bubbled up
@@ -137,10 +173,7 @@ class InstagramService:
             return ""
 
     def _client_for(self, user: User) -> Client:
-        if Client is None:
-            raise InstagramServiceError(
-                "instagrapi is not installed. Install dependencies to enable Instagram syncing."
-            )
+        self._require_available()
 
         cached = self._client_cache.get(user.id)
         if cached is not None:

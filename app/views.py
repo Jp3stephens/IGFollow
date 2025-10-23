@@ -55,6 +55,7 @@ def dashboard():
         accounts=accounts,
         instagram_connected=service.is_connected(current_user),
         instagram_available=service.is_available(),
+        instagram_error=service.availability_error(),
     )
 
 
@@ -85,6 +86,7 @@ def instagram_settings():
         instagram_session=session,
         instagram_connected=service.is_connected(current_user),
         instagram_available=service.is_available(),
+        instagram_error=service.availability_error(),
     )
 
 
@@ -137,6 +139,7 @@ def add_account():
         "accounts/add.html",
         instagram_connected=service.is_connected(current_user),
         instagram_available=service.is_available(),
+        instagram_error=service.availability_error(),
     )
 
 
@@ -164,6 +167,7 @@ def view_account(account_id: int):
         following_entries=_snapshot_entries(following_snapshot) if following_snapshot else [],
         instagram_connected=service.is_connected(current_user),
         instagram_available=service.is_available(),
+        instagram_error=service.availability_error(),
     )
 
 

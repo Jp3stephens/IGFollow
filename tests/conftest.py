@@ -1,7 +1,7 @@
 import json
 import os
 import sys
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import pytest
 
@@ -16,6 +16,7 @@ from app.models import InstagramSession  # noqa: E402
 class StubInstagramService:
     def __init__(self):
         self._available = True
+        self._availability_error: Optional[str] = None
         self._connected_users: set[int] = set()
         self.relationships: Dict[str, List[Dict[str, str]]] = {
             "followers": [
@@ -39,6 +40,9 @@ class StubInstagramService:
 
     def is_available(self) -> bool:
         return self._available
+
+    def availability_error(self) -> Optional[str]:
+        return self._availability_error
 
     def is_connected(self, user) -> bool:
         return bool(user and user.id in self._connected_users)
@@ -74,8 +78,9 @@ class StubInstagramService:
         return f"https://img.local/{username}.jpg"
 
     # Helpers for tests
-    def set_available(self, value: bool) -> None:
+    def set_available(self, value: bool, error: Optional[str] = None) -> None:
         self._available = value
+        self._availability_error = None if value else error
 
     def disconnect_all(self) -> None:
         self._connected_users.clear()

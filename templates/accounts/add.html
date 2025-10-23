@@ -15,6 +15,9 @@
           <a href="{{ url_for('main.instagram_settings') }}" class="alert-link">Connect now</a>.
           {% else %}
           Install <code>instagrapi</code> to enable automatic syncing or continue with manual uploads.
+          {% if instagram_error %}
+          <div class="small text-muted mt-2 text-break">{{ instagram_error }}</div>
+          {% endif %}
           {% endif %}
         </div>
         {% endif %}
